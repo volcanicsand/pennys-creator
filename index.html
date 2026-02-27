@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penny's Amazing Creator!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4, #ffecd2);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff6b9d, #c44dff);
+            color: white;
+            font-size: 1.3em;
+        }
+
+        .tool-section {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tool-section h3 {
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Background colors */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .color-swatch {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.15);
+            border-color: #333;
+        }
+
+        .color-swatch.active {
+            border-color: #333;
+            box-shadow: 0 0 0 2px #333;
+        }
+
+        /* Background patterns */
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .pattern-btn {
+            padding: 6px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            font-size: 0.75em;
+            text-align: center;
+            background: white;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .pattern-btn:hover {
+            transform: scale(1.05);
+            border-color: #333;
+        }
+
+        /* Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 4px 0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-pink {
+            background: linear-gradient(135deg, #ff6b9d, #ff8a80);
+            color: white;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #c44dff, #7c4dff);
+            color: white;
+        }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #448aff, #44d7ff);
+            color: white;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #69f0ae, #00e676);
+            color: #333;
+        }
+
+        .btn-orange {
+            background: linear-gradient(135deg, #ffab40, #ff6e40);
+            color: white;
+        }
+
+        /* Text controls */
+        .text-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95em;
+            margin-bottom: 6px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #c44dff;
+        }
+
+        .font-select, .font-size-select, .text-color-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.85em;
+            margin-bottom: 6px;
+            background: white;
+        }
+
+        .text-style-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .style-btn {
+            flex: 1;
+            padding: 6px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            font-size: 0.85em;
+            text-align: center;
+            transition: background 0.15s;
+        }
+
+        .style-btn:hover, .style-btn.active {
+            background: #f0e6ff;
+            border-color: #c44dff;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 6px;
+        }
+
+        .upload-area:hover {
+            border-color: #c44dff;
+            background: #faf0ff;
+        }
+
+        .upload-area p {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        /* Sticker grid */
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .sticker-btn {
+            font-size: 28px;
+            padding: 6px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            text-align: center;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .sticker-btn:hover {
+            transform: scale(1.2);
+            border-color: #c44dff;
+        }
+
+        .sticker-category-btn {
+            padding: 6px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            font-size: 0.8em;
+            text-align: center;
+            transition: background 0.15s;
+        }
+
+        .sticker-category-btn:hover, .sticker-category-btn.active {
+            background: #f0e6ff;
+            border-color: #c44dff;
+        }
+
+        /* Canvas area */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 800px;
+            height: 560px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .canvas-element {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+        }
+
+        .canvas-element:hover {
+            outline: 2px dashed #c44dff;
+        }
+
+        .canvas-element.selected {
+            outline: 2px solid #c44dff;
+        }
+
+        .canvas-element img {
+            max-width: 100%;
+            max-height: 100%;
+            pointer-events: none;
+        }
+
+        .canvas-text {
+            min-width: 30px;
+            padding: 4px 8px;
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #c44dff;
+            border: 2px solid white;
+            border-radius: 50%;
+            bottom: -7px;
+            right: -7px;
+            cursor: nwse-resize;
+            display: none;
+        }
+
+        .canvas-element.selected .resize-handle {
+            display: block;
+        }
+
+        /* Delete button on elements */
+        .delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            background: #ff4444;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+
+        .canvas-element.selected .delete-btn {
+            display: block;
+        }
+
+        /* Bottom toolbar */
+        .bottom-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .bottom-bar .btn {
+            width: auto;
+            padding: 10px 25px;
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Layer controls */
+        .layer-btn {
+            flex: 1;
+            padding: 5px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            font-size: 0.75em;
+            text-align: center;
+            transition: background 0.15s;
+        }
+
+        .layer-btn:hover {
+            background: #f0e6ff;
+            border-color: #c44dff;
+        }
+
+        /* Gallery items */
+        .gallery-item {
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.03);
+            border-color: #c44dff;
+        }
+
+        .gallery-item-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .gallery-item-date {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .gallery-item-info {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .gallery-item-buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .gallery-item-buttons button {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <h1>Penny's Amazing Creator!</h1>
+
+            <!-- Background Section -->
+            <div class="tool-section">
+                <h3>Background Color</h3>
+                <div class="color-grid">
+                    <div class="color-swatch active" style="background: #ffffff" data-color="#ffffff"></div>
+                    <div class="color-swatch" style="background: #ff9a9e" data-color="#ff9a9e"></div>
+                    <div class="color-swatch" style="background: #fad0c4" data-color="#fad0c4"></div>
+                    <div class="color-swatch" style="background: #a8edea" data-color="#a8edea"></div>
+                    <div class="color-swatch" style="background: #d4fc79" data-color="#d4fc79"></div>
+                    <div class="color-swatch" style="background: #fee140" data-color="#fee140"></div>
+                    <div class="color-swatch" style="background: #fbc2eb" data-color="#fbc2eb"></div>
+                    <div class="color-swatch" style="background: #a18cd1" data-color="#a18cd1"></div>
+                    <div class="color-swatch" style="background: #89f7fe" data-color="#89f7fe"></div>
+                    <div class="color-swatch" style="background: #ffc3a0" data-color="#ffc3a0"></div>
+                    <div class="color-swatch" style="background: #ff6b6b" data-color="#ff6b6b"></div>
+                    <div class="color-swatch" style="background: #c44dff" data-color="#c44dff"></div>
+                    <div class="color-swatch" style="background: #4dc9f6" data-color="#4dc9f6"></div>
+                    <div class="color-swatch" style="background: #f7dc6f" data-color="#f7dc6f"></div>
+                    <div class="color-swatch" style="background: #82e0aa" data-color="#82e0aa"></div>
+                    <div class="color-swatch" style="background: #f8b4c8" data-color="#f8b4c8"></div>
+                    <div class="color-swatch" style="background: #bb8fce" data-color="#bb8fce"></div>
+                    <div class="color-swatch" style="background: #85c1e9" data-color="#85c1e9"></div>
+                    <div class="color-swatch" style="background: #2c3e50" data-color="#2c3e50"></div>
+                    <div class="color-swatch" style="background: #1a1a2e" data-color="#1a1a2e"></div>
+                </div>
+                <div class="pattern-grid">
+                    <div class="pattern-btn" data-pattern="none">Solid</div>
+                    <div class="pattern-btn" data-pattern="gradient-sunset">Sunset</div>
+                    <div class="pattern-btn" data-pattern="gradient-ocean">Ocean</div>
+                    <div class="pattern-btn" data-pattern="gradient-forest">Forest</div>
+                    <div class="pattern-btn" data-pattern="gradient-candy">Candy</div>
+                    <div class="pattern-btn" data-pattern="gradient-night">Night Sky</div>
+                </div>
+            </div>
+
+            <!-- Add Text Section -->
+            <div class="tool-section">
+                <h3>Add Text</h3>
+                <input type="text" class="text-input" id="textInput" placeholder="Type something fun...">
+                <select class="font-select" id="fontSelect">
+                    <option value="Segoe UI">Default</option>
+                    <option value="Georgia">Fancy</option>
+                    <option value="Courier New">Typewriter</option>
+                    <option value="Impact">Bold Impact</option>
+                    <option value="Comic Sans MS">Comic</option>
+                    <option value="Arial Black">Thick</option>
+                    <option value="Brush Script MT">Script</option>
+                </select>
+                <select class="font-size-select" id="fontSizeSelect">
+                    <option value="16">Small</option>
+                    <option value="24" selected>Medium</option>
+                    <option value="36">Large</option>
+                    <option value="48">Extra Large</option>
+                    <option value="72">Huge</option>
+                </select>
+                <div class="text-style-row">
+                    <div class="style-btn" id="boldBtn" onclick="toggleStyle('bold')"><b>B</b></div>
+                    <div class="style-btn" id="italicBtn" onclick="toggleStyle('italic')"><i>I</i></div>
+                    <input type="color" id="textColorInput" value="#333333" style="flex:1; height:32px; border-radius:8px; border:2px solid #ddd; cursor:pointer;">
+                </div>
+                <button class="btn btn-purple" onclick="addText()">Add Text</button>
+            </div>
+
+            <!-- Stickers -->
+            <div class="tool-section">
+                <h3>Stickers</h3>
+                <div class="pattern-grid" style="margin-bottom: 8px;">
+                    <div class="sticker-category-btn active" onclick="showStickerCategory('animals')">Animals</div>
+                    <div class="sticker-category-btn" onclick="showStickerCategory('food')">Food</div>
+                    <div class="sticker-category-btn" onclick="showStickerCategory('nature')">Nature</div>
+                    <div class="sticker-category-btn" onclick="showStickerCategory('fun')">Fun</div>
+                    <div class="sticker-category-btn" onclick="showStickerCategory('hearts')">Hearts</div>
+                    <div class="sticker-category-btn" onclick="showStickerCategory('faces')">Faces</div>
+                </div>
+                <div class="sticker-grid" id="stickerGrid"></div>
+            </div>
+
+            <!-- Upload Images -->
+            <div class="tool-section">
+                <h3>Upload Your Own Images</h3>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <p>Click here to upload images!</p>
+                    <p style="font-size: 0.75em; margin-top: 4px; color: #aaa;">Ask your dad for help finding saved pictures</p>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple onchange="handleUpload(event)">
+            </div>
+
+            <!-- Size & Layer Controls -->
+            <div class="tool-section">
+                <h3>Size</h3>
+                <div class="text-style-row">
+                    <button class="btn btn-blue" onclick="resizeSelected(1.3)" style="font-size:1.2em;">Bigger +</button>
+                    <button class="btn btn-blue" onclick="resizeSelected(0.7)" style="font-size:1.2em;">Smaller -</button>
+                </div>
+                <button class="btn btn-green" onclick="removeBackground()" style="font-size:1.1em;">Remove Background</button>
+                <h3 style="margin-top:8px;">Layer</h3>
+                <div class="text-style-row">
+                    <div class="layer-btn" onclick="moveLayer('up')">Bring Forward</div>
+                    <div class="layer-btn" onclick="moveLayer('down')">Send Back</div>
+                </div>
+                <button class="btn btn-orange" onclick="duplicateSelected()">Duplicate</button>
+                <button class="btn btn-pink" onclick="deleteSelected()">Delete</button>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container">
+            <div class="canvas-wrapper" id="canvas">
+            </div>
+            <div class="bottom-bar">
+                <button class="btn btn-purple" onclick="saveToGallery()">Save to Gallery</button>
+                <button class="btn btn-blue" onclick="toggleGallery()">My Gallery</button>
+                <button class="btn btn-green" onclick="newProject()">New Project</button>
+                <button class="btn btn-pink" onclick="clearCanvas()">Clear All</button>
+            </div>
+
+            <!-- Gallery overlay -->
+            <div id="galleryOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; overflow-y:auto;">
+                <div style="max-width:700px; margin:40px auto; background:white; border-radius:16px; padding:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 style="color:#c44dff;">My Gallery</h2>
+                        <button class="btn btn-pink" onclick="toggleGallery()" style="width:auto; padding:8px 20px;">Close</button>
+                    </div>
+                    <div id="galleryGrid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;"></div>
+                    <p id="galleryEmpty" style="text-align:center; color:#aaa; padding:30px; display:none;">No saved creations yet! Make something and save it.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sticker library
+        const stickers = {
+            animals: ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🐸', '🐵', '🦄', '🐝', '🦋', '🐢', '🐙', '🦀', '🐠', '🐧', '🐦', '🦜', '🦩', '🐿️', '🦔', '🐾'],
+            food: ['🍊', '🍎', '🍓', '🍕', '🍩', '🧁', '🍰', '🍪', '🍫', '🍬', '🎂', '🍿', '🌮', '🍔', '🍟', '🧇', '🥞', '🍦', '🥤', '🧋', '🍭', '🍉', '🥑', '🍑', '🍒'],
+            nature: ['🌸', '🌺', '🌻', '🌹', '🌷', '🌿', '🍀', '🌴', '🌈', '⭐', '🌙', '☀️', '⛅', '❄️', '🔥', '💧', '🌊', '🍄', '🌵', '🎄', '🍁', '🍂', '🌾', '💐', '🪷'],
+            fun: ['🎀', '👑', '💎', '🎪', '🎨', '🎭', '🎬', '🎤', '🎸', '🎹', '🎮', '🕹️', '🛒', '🏠', '🏰', '🎡', '🎢', '🚀', '✈️', '🎁', '🎈', '🎊', '🧸', '🪄', '🫧'],
+            hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🩷', '🩵', '💖', '💗', '💓', '💞', '💕', '💘', '💝', '💟', '♥️', '❣️', '🫶', '💑', '💏', '😍', '🥰'],
+            faces: ['😊', '😂', '🥺', '😎', '🤩', '😇', '🤔', '😴', '🥳', '😱', '🤗', '😏', '🙄', '😤', '🤭', '😜', '🤪', '😋', '🥹', '😈', '👻', '💀', '👽', '🤖', '😺']
+        };
+
+        function showStickerCategory(category) {
+            document.querySelectorAll('.sticker-category-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            const grid = document.getElementById('stickerGrid');
+            grid.innerHTML = '';
+            stickers[category].forEach(sticker => {
+                const btn = document.createElement('div');
+                btn.className = 'sticker-btn';
+                btn.textContent = sticker;
+                btn.addEventListener('click', () => addSticker(sticker));
+                grid.appendChild(btn);
+            });
+        }
+
+        function addSticker(emoji) {
+            const el = createCanvasElement();
+            el.classList.add('canvas-text');
+            el.style.fontSize = '60px';
+            el.style.lineHeight = '1';
+            el.textContent = emoji;
+            el.style.left = (50 + Math.random() * 300) + 'px';
+            el.style.top = (50 + Math.random() * 200) + 'px';
+            document.getElementById('canvas').appendChild(el);
+            selectElement(el);
+            saveState();
+        }
+
+        // Initial sticker category loaded in DOMContentLoaded at bottom
+
+        let selectedElement = null;
+        let isDragging = false;
+        let isResizing = false;
+        let dragOffset = { x: 0, y: 0 };
+        let zCounter = 1;
+        let textStyles = { bold: false, italic: false };
+
+        // Background colors
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                const canvas = document.getElementById('canvas');
+                canvas.style.background = swatch.dataset.color;
+                canvas.style.backgroundImage = 'none';
+            });
+        });
+
+        // Background patterns
+        const patterns = {
+            'none': 'none',
+            'gradient-sunset': 'linear-gradient(135deg, #ff6b6b, #ffa07a, #ffd700)',
+            'gradient-ocean': 'linear-gradient(135deg, #667eea, #764ba2, #89f7fe)',
+            'gradient-forest': 'linear-gradient(135deg, #134e5e, #71b280, #d4fc79)',
+            'gradient-candy': 'linear-gradient(135deg, #ff9a9e, #fecfef, #fbc2eb, #a18cd1)',
+            'gradient-night': 'linear-gradient(135deg, #0c0c1d, #1a1a3e, #2d1b69, #11998e)'
+        };
+
+        document.querySelectorAll('.pattern-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const canvas = document.getElementById('canvas');
+                const pattern = btn.dataset.pattern;
+                if (pattern === 'none') {
+                    canvas.style.backgroundImage = 'none';
+                } else {
+                    canvas.style.backgroundImage = patterns[pattern];
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                }
+            });
+        });
+
+        // Toggle text styles
+        function toggleStyle(style) {
+            textStyles[style] = !textStyles[style];
+            document.getElementById(style + 'Btn').classList.toggle('active');
+        }
+
+        // Add text
+        function addText() {
+            const text = document.getElementById('textInput').value;
+            if (!text) return;
+
+            const el = createCanvasElement();
+            el.classList.add('canvas-text');
+            el.textContent = text;
+            el.style.fontFamily = document.getElementById('fontSelect').value;
+            el.style.fontSize = document.getElementById('fontSizeSelect').value + 'px';
+            el.style.color = document.getElementById('textColorInput').value;
+            el.style.fontWeight = textStyles.bold ? 'bold' : 'normal';
+            el.style.fontStyle = textStyles.italic ? 'italic' : 'normal';
+            el.style.left = '50px';
+            el.style.top = '50px';
+
+            document.getElementById('canvas').appendChild(el);
+            document.getElementById('textInput').value = '';
+            selectElement(el);
+            saveState();
+        }
+
+        // Handle image upload
+        function handleUpload(event) {
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const el = createCanvasElement();
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.width = '200px';
+                    img.style.height = 'auto';
+                    el.appendChild(img);
+                    el.style.left = (50 + i * 30) + 'px';
+                    el.style.top = (50 + i * 30) + 'px';
+                    document.getElementById('canvas').appendChild(el);
+                    selectElement(el);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = '';
+        }
+
+        // Create a canvas element with drag/resize/delete
+        function createCanvasElement() {
+            const el = document.createElement('div');
+            el.className = 'canvas-element';
+            el.style.zIndex = zCounter++;
+
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = 'x';
+            deleteBtn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                el.remove();
+                selectedElement = null;
+            });
+            el.appendChild(deleteBtn);
+
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                isResizing = true;
+                selectedElement = el;
+                e.preventDefault();
+            });
+            el.appendChild(resizeHandle);
+
+            el.addEventListener('mousedown', (e) => {
+                if (e.target.className === 'delete-btn' || e.target.className === 'resize-handle') return;
+                selectElement(el);
+                isDragging = true;
+                const rect = el.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                e.preventDefault();
+            });
+
+            return el;
+        }
+
+        // Select element
+        function selectElement(el) {
+            if (selectedElement) selectedElement.classList.remove('selected');
+            selectedElement = el;
+            el.classList.add('selected');
+        }
+
+        // Mouse move for drag and resize
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && selectedElement) {
+                const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+                let x = e.clientX - canvasRect.left - dragOffset.x;
+                let y = e.clientY - canvasRect.top - dragOffset.y;
+                selectedElement.style.left = x + 'px';
+                selectedElement.style.top = y + 'px';
+            }
+            if (isResizing && selectedElement) {
+                const rect = selectedElement.getBoundingClientRect();
+                const newWidth = e.clientX - rect.left;
+                const newHeight = e.clientY - rect.top;
+                if (newWidth > 30) {
+                    selectedElement.style.width = newWidth + 'px';
+                    const img = selectedElement.querySelector('img');
+                    if (img) {
+                        img.style.width = newWidth + 'px';
+                    }
+                }
+                if (newHeight > 30 && !selectedElement.querySelector('img')) {
+                    selectedElement.style.fontSize = Math.max(12, newHeight / 2) + 'px';
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isResizing = false;
+        });
+
+        // Click on canvas to deselect
+        document.getElementById('canvas').addEventListener('mousedown', (e) => {
+            if (e.target.id === 'canvas') {
+                if (selectedElement) selectedElement.classList.remove('selected');
+                selectedElement = null;
+            }
+        });
+
+        // Remove background from selected image
+        function removeBackground() {
+            if (!selectedElement) {
+                alert('Click on a picture first, then press Remove Background!');
+                return;
+            }
+            const img = selectedElement.querySelector('img');
+            if (!img) {
+                alert('This only works on pictures, not stickers or text!');
+                return;
+            }
+
+            try {
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+
+                tempCanvas.width = img.naturalWidth || 200;
+                tempCanvas.height = img.naturalHeight || 200;
+                ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+
+                // Sample corners to guess background color
+                const w = tempCanvas.width;
+                const h = tempCanvas.height;
+                const cornerPixels = [];
+                // Sample several pixels from each corner area
+                for (let x = 0; x < 3; x++) {
+                    for (let y = 0; y < 3; y++) {
+                        cornerPixels.push((y * w + x) * 4); // top-left
+                        cornerPixels.push((y * w + (w - 1 - x)) * 4); // top-right
+                        cornerPixels.push(((h - 1 - y) * w + x) * 4); // bottom-left
+                        cornerPixels.push(((h - 1 - y) * w + (w - 1 - x)) * 4); // bottom-right
+                    }
+                }
+
+                let bgR = 0, bgG = 0, bgB = 0, count = 0;
+                cornerPixels.forEach(i => {
+                    if (i >= 0 && i + 2 < data.length) {
+                        bgR += data[i];
+                        bgG += data[i + 1];
+                        bgB += data[i + 2];
+                        count++;
+                    }
+                });
+                bgR = Math.round(bgR / count);
+                bgG = Math.round(bgG / count);
+                bgB = Math.round(bgB / count);
+
+                // Remove pixels similar to background color
+                const tolerance = 50;
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const diff = Math.sqrt(
+                        (r - bgR) * (r - bgR) +
+                        (g - bgG) * (g - bgG) +
+                        (b - bgB) * (b - bgB)
+                    );
+                    if (diff < tolerance) {
+                        data[i + 3] = 0; // Make transparent
+                    }
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                img.src = tempCanvas.toDataURL('image/png');
+                saveState();
+            } catch(e) {
+                alert('Could not remove background from this image. Try a different picture!');
+            }
+        }
+
+        // Paste images from clipboard - shrink them to save space
+        document.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        // Shrink the image to save storage space
+                        const tempImg = new Image();
+                        tempImg.onload = function() {
+                            const maxSize = 400;
+                            let w = tempImg.width;
+                            let h = tempImg.height;
+                            if (w > maxSize || h > maxSize) {
+                                if (w > h) {
+                                    h = Math.round(h * maxSize / w);
+                                    w = maxSize;
+                                } else {
+                                    w = Math.round(w * maxSize / h);
+                                    h = maxSize;
+                                }
+                            }
+                            const shrinkCanvas = document.createElement('canvas');
+                            shrinkCanvas.width = w;
+                            shrinkCanvas.height = h;
+                            const ctx = shrinkCanvas.getContext('2d');
+                            ctx.drawImage(tempImg, 0, 0, w, h);
+                            const smallSrc = shrinkCanvas.toDataURL('image/png');
+
+                            const el = createCanvasElement();
+                            const img = document.createElement('img');
+                            img.src = smallSrc;
+                            img.style.width = '200px';
+                            img.style.height = 'auto';
+                            el.appendChild(img);
+                            el.style.left = '50px';
+                            el.style.top = '50px';
+                            document.getElementById('canvas').appendChild(el);
+                            selectElement(el);
+                            saveState();
+                        };
+                        tempImg.src = event.target.result;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+
+        // Resize selected
+        function resizeSelected(factor) {
+            if (!selectedElement) return;
+            const currentSize = parseFloat(selectedElement.style.fontSize) || 24;
+            const newSize = Math.max(12, Math.min(200, currentSize * factor));
+            selectedElement.style.fontSize = newSize + 'px';
+            // Also resize images
+            const img = selectedElement.querySelector('img');
+            if (img) {
+                const currentWidth = parseInt(img.style.width) || 200;
+                const newWidth = Math.max(30, Math.min(700, currentWidth * factor));
+                img.style.width = newWidth + 'px';
+            }
+        }
+
+        // Layer controls
+        function moveLayer(direction) {
+            if (!selectedElement) return;
+            const current = parseInt(selectedElement.style.zIndex) || 0;
+            if (direction === 'up') {
+                selectedElement.style.zIndex = current + 1;
+            } else {
+                selectedElement.style.zIndex = Math.max(0, current - 1);
+            }
+        }
+
+        // Duplicate
+        function duplicateSelected() {
+            if (!selectedElement) return;
+            const clone = selectedElement.cloneNode(true);
+            clone.style.left = (parseInt(selectedElement.style.left) + 20) + 'px';
+            clone.style.top = (parseInt(selectedElement.style.top) + 20) + 'px';
+            clone.style.zIndex = zCounter++;
+            clone.classList.remove('selected');
+
+            // Re-attach event listeners
+            const deleteBtn = clone.querySelector('.delete-btn');
+            deleteBtn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                clone.remove();
+                if (selectedElement === clone) selectedElement = null;
+            });
+
+            const resizeHandle = clone.querySelector('.resize-handle');
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                isResizing = true;
+                selectedElement = clone;
+                e.preventDefault();
+            });
+
+            clone.addEventListener('mousedown', (e) => {
+                if (e.target.className === 'delete-btn' || e.target.className === 'resize-handle') return;
+                selectElement(clone);
+                isDragging = true;
+                const rect = clone.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                e.preventDefault();
+            });
+
+            document.getElementById('canvas').appendChild(clone);
+            selectElement(clone);
+        }
+
+        // Delete selected
+        function deleteSelected() {
+            if (!selectedElement) return;
+            selectedElement.remove();
+            selectedElement = null;
+        }
+
+        // Clear canvas
+        function clearCanvas() {
+            if (!confirm('Are you sure you want to clear everything?')) return;
+            const canvas = document.getElementById('canvas');
+            canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+            selectedElement = null;
+        }
+
+        // Save as image
+        function saveAsImage() {
+            // Deselect everything first
+            if (selectedElement) selectedElement.classList.remove('selected');
+            selectedElement = null;
+
+            const canvas = document.getElementById('canvas');
+
+            // Use html2canvas-style approach with a simple canvas export
+            // For now, we'll take a screenshot-like approach
+            const htmlCanvas = document.createElement('canvas');
+            htmlCanvas.width = 800;
+            htmlCanvas.height = 560;
+            const ctx = htmlCanvas.getContext('2d');
+
+            // Draw background
+            const bgColor = canvas.style.background || '#ffffff';
+            const bgImage = canvas.style.backgroundImage;
+
+            if (bgImage && bgImage !== 'none') {
+                // For gradients, we'll draw the element
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 800, 560);
+
+                // Create a temporary canvas to render gradient
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 800;
+                tempCanvas.height = 560;
+                const tempEl = document.createElement('div');
+                tempEl.style.width = '800px';
+                tempEl.style.height = '560px';
+                tempEl.style.backgroundImage = bgImage;
+            }
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 800, 560);
+
+            // Simple save - alert user about limitation
+            // Use the Blob approach for better compatibility
+            const elements = canvas.querySelectorAll('.canvas-element');
+
+            if (elements.length === 0 && (!bgImage || bgImage === 'none')) {
+                // Simple solid background, just save
+                htmlCanvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'pennys-creation.png';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+                return;
+            }
+
+            // For complex saves, use a workaround
+            alert('Tip: To save your creation, press the Print Screen key or use Snipping Tool (Windows + Shift + S) to capture your design!');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && selectedElement && document.activeElement.tagName !== 'INPUT') {
+                selectedElement.remove();
+                selectedElement = null;
+                saveState();
+            }
+            if (e.key === 'Escape') {
+                if (selectedElement) selectedElement.classList.remove('selected');
+                selectedElement = null;
+            }
+        });
+
+        // Auto-save to localStorage
+        function saveState() {
+            const canvas = document.getElementById('canvas');
+            const state = {
+                background: canvas.style.background || '#ffffff',
+                backgroundImage: canvas.style.backgroundImage || 'none',
+                elements: []
+            };
+            canvas.querySelectorAll('.canvas-element').forEach(el => {
+                const img = el.querySelector('img');
+                const deleteBtn = el.querySelector('.delete-btn');
+                const resizeHandle = el.querySelector('.resize-handle');
+                const item = {
+                    left: el.style.left,
+                    top: el.style.top,
+                    zIndex: el.style.zIndex,
+                    fontSize: el.style.fontSize,
+                    fontFamily: el.style.fontFamily,
+                    fontWeight: el.style.fontWeight,
+                    fontStyle: el.style.fontStyle,
+                    color: el.style.color,
+                    lineHeight: el.style.lineHeight,
+                    width: el.style.width
+                };
+                if (img) {
+                    item.type = 'image';
+                    item.imgSrc = img.src;
+                    item.imgWidth = img.style.width;
+                } else {
+                    item.type = 'text';
+                    // Get text without the delete button text
+                    let text = '';
+                    el.childNodes.forEach(node => {
+                        if (node.nodeType === 3) text += node.textContent;
+                    });
+                    item.text = text || el.textContent.replace('x', '').trim();
+                }
+                state.elements.push(item);
+            });
+            localStorage.setItem('pennysCreatorState', JSON.stringify(state));
+        }
+
+        // Load from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('pennysCreatorState');
+            if (!saved) return;
+            try {
+                const state = JSON.parse(saved);
+                const canvas = document.getElementById('canvas');
+                if (state.background) canvas.style.background = state.background;
+                if (state.backgroundImage && state.backgroundImage !== 'none') {
+                    canvas.style.backgroundImage = state.backgroundImage;
+                }
+                state.elements.forEach(item => {
+                    const el = createCanvasElement();
+                    el.style.left = item.left;
+                    el.style.top = item.top;
+                    el.style.zIndex = item.zIndex;
+                    if (item.fontSize) el.style.fontSize = item.fontSize;
+                    if (item.fontFamily) el.style.fontFamily = item.fontFamily;
+                    if (item.fontWeight) el.style.fontWeight = item.fontWeight;
+                    if (item.fontStyle) el.style.fontStyle = item.fontStyle;
+                    if (item.color) el.style.color = item.color;
+                    if (item.lineHeight) el.style.lineHeight = item.lineHeight;
+                    if (item.width) el.style.width = item.width;
+                    if (item.type === 'image') {
+                        const img = document.createElement('img');
+                        img.src = item.imgSrc;
+                        if (item.imgWidth) img.style.width = item.imgWidth;
+                        img.style.height = 'auto';
+                        el.appendChild(img);
+                    } else {
+                        el.classList.add('canvas-text');
+                        const textNode = document.createTextNode(item.text);
+                        el.insertBefore(textNode, el.firstChild);
+                    }
+                    canvas.appendChild(el);
+                });
+                zCounter = state.elements.length + 1;
+            } catch(e) {
+                // If load fails, start fresh
+            }
+        }
+
+        // Auto-save after any change
+        const originalMouseUp = document.onmouseup;
+        document.addEventListener('mouseup', () => {
+            setTimeout(saveState, 100);
+        });
+
+        // Save when adding stickers or text
+        const originalAddSticker = addSticker;
+        const origAddText = addText;
+
+        // Override clear to also clear saved state
+        const origClear = clearCanvas;
+        function clearCanvas() {
+            if (!confirm('Are you sure you want to clear everything?')) return;
+            const canvas = document.getElementById('canvas');
+            canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+            selectedElement = null;
+            localStorage.removeItem('pennysCreatorState');
+        }
+
+        // Gallery functions
+        function saveToGallery() {
+            const name = prompt('Name your creation:');
+            if (!name) return;
+
+            const canvas = document.getElementById('canvas');
+            const state = {
+                background: canvas.style.background || '#ffffff',
+                backgroundImage: canvas.style.backgroundImage || 'none',
+                elements: []
+            };
+            canvas.querySelectorAll('.canvas-element').forEach(el => {
+                const img = el.querySelector('img');
+                const item = {
+                    left: el.style.left,
+                    top: el.style.top,
+                    zIndex: el.style.zIndex,
+                    fontSize: el.style.fontSize,
+                    fontFamily: el.style.fontFamily,
+                    fontWeight: el.style.fontWeight,
+                    fontStyle: el.style.fontStyle,
+                    color: el.style.color,
+                    lineHeight: el.style.lineHeight,
+                    width: el.style.width
+                };
+                if (img) {
+                    item.type = 'image';
+                    item.imgSrc = img.src;
+                    item.imgWidth = img.style.width;
+                } else {
+                    item.type = 'text';
+                    let text = '';
+                    el.childNodes.forEach(node => {
+                        if (node.nodeType === 3) text += node.textContent;
+                    });
+                    item.text = text || el.textContent.replace('x', '').trim();
+                }
+                state.elements.push(item);
+            });
+
+            let gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
+            gallery.push({
+                name: name,
+                date: new Date().toLocaleDateString(),
+                itemCount: state.elements.length,
+                state: state
+            });
+            try {
+                localStorage.setItem('pennysGallery', JSON.stringify(gallery));
+                alert('Saved "' + name + '" to your gallery!');
+            } catch(e) {
+                // Storage full - try shrinking images
+                gallery.pop(); // remove the one we just added
+                alert('Not enough space to save! Try using fewer or smaller pictures.');
+            }
+        }
+
+        function toggleGallery() {
+            const overlay = document.getElementById('galleryOverlay');
+            if (overlay.style.display === 'none') {
+                overlay.style.display = 'block';
+                renderGallery();
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            const empty = document.getElementById('galleryEmpty');
+            const gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
+
+            grid.innerHTML = '';
+
+            if (gallery.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            gallery.forEach((project, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `
+                    <div class="gallery-item-name">${project.name}</div>
+                    <div class="gallery-item-date">${project.date}</div>
+                    <div class="gallery-item-info">${project.itemCount} items</div>
+                    <div class="gallery-item-buttons">
+                        <button style="background:linear-gradient(135deg,#c44dff,#7c4dff);" onclick="loadFromGallery(${index})">Open</button>
+                        <button style="background:linear-gradient(135deg,#ff6b9d,#ff8a80);" onclick="deleteFromGallery(${index})">Delete</button>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function loadFromGallery(index) {
+            const gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
+            if (!gallery[index]) return;
+
+            const canvas = document.getElementById('canvas');
+            // Clear current canvas
+            canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+            selectedElement = null;
+
+            // Load the saved state
+            const state = gallery[index].state;
+            if (state.background) canvas.style.background = state.background;
+            if (state.backgroundImage && state.backgroundImage !== 'none') {
+                canvas.style.backgroundImage = state.backgroundImage;
+            } else {
+                canvas.style.backgroundImage = 'none';
+            }
+            state.elements.forEach(item => {
+                const el = createCanvasElement();
+                el.style.left = item.left;
+                el.style.top = item.top;
+                el.style.zIndex = item.zIndex;
+                if (item.fontSize) el.style.fontSize = item.fontSize;
+                if (item.fontFamily) el.style.fontFamily = item.fontFamily;
+                if (item.fontWeight) el.style.fontWeight = item.fontWeight;
+                if (item.fontStyle) el.style.fontStyle = item.fontStyle;
+                if (item.color) el.style.color = item.color;
+                if (item.lineHeight) el.style.lineHeight = item.lineHeight;
+                if (item.width) el.style.width = item.width;
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.imgSrc;
+                    if (item.imgWidth) img.style.width = item.imgWidth;
+                    img.style.height = 'auto';
+                    el.appendChild(img);
+                } else {
+                    el.classList.add('canvas-text');
+                    const textNode = document.createTextNode(item.text);
+                    el.insertBefore(textNode, el.firstChild);
+                }
+                canvas.appendChild(el);
+            });
+            zCounter = state.elements.length + 1;
+            saveState();
+            toggleGallery();
+        }
+
+        function deleteFromGallery(index) {
+            if (!confirm('Delete this creation from your gallery?')) return;
+            let gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
+            gallery.splice(index, 1);
+            localStorage.setItem('pennysGallery', JSON.stringify(gallery));
+            renderGallery();
+        }
+
+        function newProject() {
+            if (!confirm('Start a new project? Make sure you saved your current one first!')) return;
+            const canvas = document.getElementById('canvas');
+            canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+            canvas.style.background = '#ffffff';
+            canvas.style.backgroundImage = 'none';
+            selectedElement = null;
+            localStorage.removeItem('pennysCreatorState');
+        }
+
+        // Load saved state when page opens
+        document.addEventListener('DOMContentLoaded', () => {
+            showStickerCategory('animals');
+            loadState();
+        });
+    </script>
+</body>
+</html>
