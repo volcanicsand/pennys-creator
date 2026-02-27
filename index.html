@@ -426,6 +426,41 @@
             font-weight: 600;
             color: white;
         }
+
+        /* Mobile layout */
+        @media (max-width: 900px) {
+            .app {
+                flex-direction: column;
+                height: auto;
+            }
+
+            body {
+                overflow: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+            }
+
+            .canvas-container {
+                padding: 10px;
+            }
+
+            .canvas-wrapper {
+                width: 100%;
+                height: 400px;
+            }
+
+            .bottom-bar {
+                flex-wrap: wrap;
+            }
+
+            .bottom-bar .btn {
+                padding: 10px 15px;
+                font-size: 0.85em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -731,6 +766,18 @@
                 e.preventDefault();
             });
 
+            // Touch support
+            el.addEventListener('touchstart', (e) => {
+                if (e.target.className === 'delete-btn' || e.target.className === 'resize-handle') return;
+                selectElement(el);
+                isDragging = true;
+                const touch = e.touches[0];
+                const rect = el.getBoundingClientRect();
+                dragOffset.x = touch.clientX - rect.left;
+                dragOffset.y = touch.clientY - rect.top;
+                e.preventDefault();
+            }, { passive: false });
+
             return el;
         }
 
@@ -768,6 +815,24 @@
         });
 
         document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isResizing = false;
+        });
+
+        // Touch move and end
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging && selectedElement) {
+                const touch = e.touches[0];
+                const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+                let x = touch.clientX - canvasRect.left - dragOffset.x;
+                let y = touch.clientY - canvasRect.top - dragOffset.y;
+                selectedElement.style.left = x + 'px';
+                selectedElement.style.top = y + 'px';
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
             isDragging = false;
             isResizing = false;
         });
