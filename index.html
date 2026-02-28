@@ -1262,8 +1262,23 @@
             localStorage.removeItem('pennysCreatorState');
         }
 
+        // IndexedDB for gallery (way more storage than localStorage)
+        function openGalleryDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PennysCreatorGallery', 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('creations')) {
+                        db.createObjectStore('creations', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e);
+            });
+        }
+
         // Gallery functions
-        function saveToGallery() {
+        async function saveToGallery() {
             const name = prompt('Name your creation:');
             if (!name) return;
 
@@ -1289,24 +1304,7 @@
                 };
                 if (img) {
                     item.type = 'image';
-                    // Shrink image for gallery storage
-                    try {
-                        const shrinkCanvas = document.createElement('canvas');
-                        const maxSave = 200;
-                        let w = img.naturalWidth || 200;
-                        let h = img.naturalHeight || 200;
-                        if (w > maxSave || h > maxSave) {
-                            if (w > h) { h = Math.round(h * maxSave / w); w = maxSave; }
-                            else { w = Math.round(w * maxSave / h); h = maxSave; }
-                        }
-                        shrinkCanvas.width = w;
-                        shrinkCanvas.height = h;
-                        const sctx = shrinkCanvas.getContext('2d');
-                        sctx.drawImage(img, 0, 0, w, h);
-                        item.imgSrc = shrinkCanvas.toDataURL('image/jpeg', 0.6);
-                    } catch(e) {
-                        item.imgSrc = img.src;
-                    }
+                    item.imgSrc = img.src;
                     item.imgWidth = img.style.width;
                 } else {
                     item.type = 'text';
@@ -1319,19 +1317,19 @@
                 state.elements.push(item);
             });
 
-            let gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
-            gallery.push({
-                name: name,
-                date: new Date().toLocaleDateString(),
-                itemCount: state.elements.length,
-                state: state
-            });
             try {
-                localStorage.setItem('pennysGallery', JSON.stringify(gallery));
-                alert('Saved "' + name + '" to your gallery!');
+                const db = await openGalleryDB();
+                const tx = db.transaction('creations', 'readwrite');
+                tx.objectStore('creations').add({
+                    name: name,
+                    date: new Date().toLocaleDateString(),
+                    itemCount: state.elements.length,
+                    state: state
+                });
+                tx.oncomplete = () => alert('Saved "' + name + '" to your gallery!');
+                tx.onerror = () => alert('Something went wrong saving. Try again!');
             } catch(e) {
-                gallery.pop();
-                alert('Storage is full! Try deleting old creations from your gallery first.');
+                alert('Something went wrong saving. Try again!');
             }
         }
 
@@ -1345,88 +1343,105 @@
             }
         }
 
-        function renderGallery() {
+        async function renderGallery() {
             const grid = document.getElementById('galleryGrid');
             const empty = document.getElementById('galleryEmpty');
-            const gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
 
             grid.innerHTML = '';
 
-            if (gallery.length === 0) {
+            try {
+                const db = await openGalleryDB();
+                const tx = db.transaction('creations', 'readonly');
+                const store = tx.objectStore('creations');
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const gallery = request.result;
+                    if (gallery.length === 0) {
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    empty.style.display = 'none';
+
+                    gallery.forEach((project) => {
+                        const item = document.createElement('div');
+                        item.className = 'gallery-item';
+                        item.innerHTML = `
+                            <div class="gallery-item-name">${project.name}</div>
+                            <div class="gallery-item-date">${project.date}</div>
+                            <div class="gallery-item-info">${project.itemCount} items</div>
+                            <div class="gallery-item-buttons">
+                                <button style="background:linear-gradient(135deg,#c44dff,#7c4dff);" onclick="loadFromGallery(${project.id})">Open</button>
+                                <button style="background:linear-gradient(135deg,#ff6b9d,#ff8a80);" onclick="deleteFromGallery(${project.id})">Delete</button>
+                            </div>
+                        `;
+                        grid.appendChild(item);
+                    });
+                };
+            } catch(e) {
                 empty.style.display = 'block';
-                return;
             }
-            empty.style.display = 'none';
-
-            gallery.forEach((project, index) => {
-                const item = document.createElement('div');
-                item.className = 'gallery-item';
-                item.innerHTML = `
-                    <div class="gallery-item-name">${project.name}</div>
-                    <div class="gallery-item-date">${project.date}</div>
-                    <div class="gallery-item-info">${project.itemCount} items</div>
-                    <div class="gallery-item-buttons">
-                        <button style="background:linear-gradient(135deg,#c44dff,#7c4dff);" onclick="loadFromGallery(${index})">Open</button>
-                        <button style="background:linear-gradient(135deg,#ff6b9d,#ff8a80);" onclick="deleteFromGallery(${index})">Delete</button>
-                    </div>
-                `;
-                grid.appendChild(item);
-            });
         }
 
-        function loadFromGallery(index) {
-            const gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
-            if (!gallery[index]) return;
+        async function loadFromGallery(id) {
+            try {
+                const db = await openGalleryDB();
+                const tx = db.transaction('creations', 'readonly');
+                const request = tx.objectStore('creations').get(id);
+                request.onsuccess = () => {
+                    const project = request.result;
+                    if (!project) return;
 
-            const canvas = document.getElementById('canvas');
-            // Clear current canvas
-            canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
-            selectedElement = null;
+                    const canvas = document.getElementById('canvas');
+                    canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+                    selectedElement = null;
 
-            // Load the saved state
-            const state = gallery[index].state;
-            if (state.background) canvas.style.background = state.background;
-            if (state.backgroundImage && state.backgroundImage !== 'none') {
-                canvas.style.backgroundImage = state.backgroundImage;
-            } else {
-                canvas.style.backgroundImage = 'none';
-            }
-            state.elements.forEach(item => {
-                const el = createCanvasElement();
-                el.style.left = item.left;
-                el.style.top = item.top;
-                el.style.zIndex = item.zIndex;
-                if (item.fontSize) el.style.fontSize = item.fontSize;
-                if (item.fontFamily) el.style.fontFamily = item.fontFamily;
-                if (item.fontWeight) el.style.fontWeight = item.fontWeight;
-                if (item.fontStyle) el.style.fontStyle = item.fontStyle;
-                if (item.color) el.style.color = item.color;
-                if (item.lineHeight) el.style.lineHeight = item.lineHeight;
-                if (item.width) el.style.width = item.width;
-                if (item.type === 'image') {
-                    const img = document.createElement('img');
-                    img.src = item.imgSrc;
-                    if (item.imgWidth) img.style.width = item.imgWidth;
-                    img.style.height = 'auto';
-                    el.appendChild(img);
-                } else {
-                    el.classList.add('canvas-text');
-                    const textNode = document.createTextNode(item.text);
-                    el.insertBefore(textNode, el.firstChild);
-                }
-                canvas.appendChild(el);
-            });
-            zCounter = state.elements.length + 1;
-            saveState();
-            toggleGallery();
+                    const state = project.state;
+                    if (state.background) canvas.style.background = state.background;
+                    if (state.backgroundImage && state.backgroundImage !== 'none') {
+                        canvas.style.backgroundImage = state.backgroundImage;
+                    } else {
+                        canvas.style.backgroundImage = 'none';
+                    }
+                    state.elements.forEach(item => {
+                        const el = createCanvasElement();
+                        el.style.left = item.left;
+                        el.style.top = item.top;
+                        el.style.zIndex = item.zIndex;
+                        if (item.fontSize) el.style.fontSize = item.fontSize;
+                        if (item.fontFamily) el.style.fontFamily = item.fontFamily;
+                        if (item.fontWeight) el.style.fontWeight = item.fontWeight;
+                        if (item.fontStyle) el.style.fontStyle = item.fontStyle;
+                        if (item.color) el.style.color = item.color;
+                        if (item.lineHeight) el.style.lineHeight = item.lineHeight;
+                        if (item.width) el.style.width = item.width;
+                        if (item.type === 'image') {
+                            const img = document.createElement('img');
+                            img.src = item.imgSrc;
+                            if (item.imgWidth) img.style.width = item.imgWidth;
+                            img.style.height = 'auto';
+                            el.appendChild(img);
+                        } else {
+                            el.classList.add('canvas-text');
+                            const textNode = document.createTextNode(item.text);
+                            el.insertBefore(textNode, el.firstChild);
+                        }
+                        canvas.appendChild(el);
+                    });
+                    zCounter = state.elements.length + 1;
+                    saveState();
+                    toggleGallery();
+                };
+            } catch(e) {}
         }
 
-        function deleteFromGallery(index) {
+        async function deleteFromGallery(id) {
             if (!confirm('Delete this creation from your gallery?')) return;
-            let gallery = JSON.parse(localStorage.getItem('pennysGallery') || '[]');
-            gallery.splice(index, 1);
-            localStorage.setItem('pennysGallery', JSON.stringify(gallery));
-            renderGallery();
+            try {
+                const db = await openGalleryDB();
+                const tx = db.transaction('creations', 'readwrite');
+                tx.objectStore('creations').delete(id);
+                tx.oncomplete = () => renderGallery();
+            } catch(e) {}
         }
 
         function newProject() {
