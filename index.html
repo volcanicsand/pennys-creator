@@ -461,10 +461,107 @@
                 font-size: 0.85em;
             }
         }
+        /* Login screen */
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4, #ffecd2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            max-width: 350px;
+            width: 90%;
+        }
+
+        .login-box h1 {
+            background: linear-gradient(135deg, #ff6b9d, #c44dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            font-size: 1.6em;
+        }
+
+        .login-box p {
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: #c44dff;
+        }
+
+        .login-box .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #c44dff, #7c4dff);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .login-box .login-error {
+            color: #ff4444;
+            font-size: 0.85em;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .user-bar {
+            position: fixed;
+            top: 0; right: 0;
+            padding: 6px 14px;
+            font-size: 0.8em;
+            color: #999;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .user-bar:hover {
+            color: #c44dff;
+        }
     </style>
 </head>
 <body>
-    <div class="app">
+    <!-- Login Screen -->
+    <div class="login-overlay" id="loginScreen">
+        <div class="login-box">
+            <h1>Penny's Amazing Creator!</h1>
+            <p>Log in to save your creations</p>
+            <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+            <button class="login-btn" onclick="doLogin()">Log In</button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- User bar -->
+    <div class="user-bar" id="userBar" onclick="doLogout()" style="display:none;"></div>
+
+    <div class="app" id="mainApp" style="display:none;">
         <div class="sidebar">
             <h1>Penny's Amazing Creator!</h1>
 
@@ -603,6 +700,67 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdluf4mJiRQjwRfdFSjlMsRvG5hZ2LZS0",
+            authDomain: "jtrivia-416ca.firebaseapp.com",
+            projectId: "jtrivia-416ca",
+            storageBucket: "jtrivia-416ca.firebasestorage.app",
+            messagingSenderId: "284944131484",
+            appId: "1:284944131484:web:7c549e0036aaf65550d459"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const firestore = firebase.firestore();
+        let currentUser = null;
+
+        // Auth functions
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.style.display = 'none';
+            if (!email || !password) {
+                errorEl.textContent = 'Please enter email and password.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function doLogout() {
+            if (confirm('Log out?')) auth.signOut();
+        }
+
+        // Enter key on password field
+        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                document.getElementById('userBar').style.display = 'block';
+                document.getElementById('userBar').textContent = user.email + ' (log out)';
+                showStickerCategory('animals');
+                loadState();
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('userBar').style.display = 'none';
+            }
+        });
+    </script>
     <script>
         // Sticker library
         const stickers = {
@@ -1287,23 +1445,13 @@
             } catch(e) {}
         }
 
-        // IndexedDB for gallery (way more storage than localStorage)
-        function openGalleryDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('PennysCreatorGallery', 1);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains('creations')) {
-                        db.createObjectStore('creations', { keyPath: 'id', autoIncrement: true });
-                    }
-                };
-                request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject(e);
-            });
+        // Gallery functions — saved to Firebase Firestore
+        function getGalleryCollection() {
+            return firestore.collection('users').doc(currentUser.uid).collection('creations');
         }
 
-        // Gallery functions
         async function saveToGallery() {
+            if (!currentUser) { alert('Please log in first!'); return; }
             const name = prompt('Name your creation:');
             if (!name) return;
 
@@ -1329,7 +1477,24 @@
                 };
                 if (img) {
                     item.type = 'image';
-                    item.imgSrc = img.src;
+                    // Compress image for Firestore (1MB doc limit)
+                    try {
+                        const shrinkCanvas = document.createElement('canvas');
+                        const maxSave = 250;
+                        let w = img.naturalWidth || 200;
+                        let h = img.naturalHeight || 200;
+                        if (w > maxSave || h > maxSave) {
+                            if (w > h) { h = Math.round(h * maxSave / w); w = maxSave; }
+                            else { w = Math.round(w * maxSave / h); h = maxSave; }
+                        }
+                        shrinkCanvas.width = w;
+                        shrinkCanvas.height = h;
+                        const sctx = shrinkCanvas.getContext('2d');
+                        sctx.drawImage(img, 0, 0, w, h);
+                        item.imgSrc = shrinkCanvas.toDataURL('image/jpeg', 0.5);
+                    } catch(e) {
+                        item.imgSrc = img.src;
+                    }
                     item.imgWidth = img.style.width;
                 } else {
                     item.type = 'text';
@@ -1343,18 +1508,16 @@
             });
 
             try {
-                const db = await openGalleryDB();
-                const tx = db.transaction('creations', 'readwrite');
-                tx.objectStore('creations').add({
+                await getGalleryCollection().add({
                     name: name,
                     date: new Date().toLocaleDateString(),
+                    dateAdded: firebase.firestore.FieldValue.serverTimestamp(),
                     itemCount: state.elements.length,
                     state: state
                 });
-                tx.oncomplete = () => alert('Saved "' + name + '" to your gallery!');
-                tx.onerror = () => alert('Something went wrong saving. Try again!');
+                alert('Saved "' + name + '" to your gallery!');
             } catch(e) {
-                alert('Something went wrong saving. Try again!');
+                alert('Could not save — try using fewer or smaller pictures. Error: ' + e.message);
             }
         }
 
@@ -1371,101 +1534,92 @@
         async function renderGallery() {
             const grid = document.getElementById('galleryGrid');
             const empty = document.getElementById('galleryEmpty');
-
             grid.innerHTML = '';
 
-            try {
-                const db = await openGalleryDB();
-                const tx = db.transaction('creations', 'readonly');
-                const store = tx.objectStore('creations');
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    const gallery = request.result;
-                    if (gallery.length === 0) {
-                        empty.style.display = 'block';
-                        return;
-                    }
-                    empty.style.display = 'none';
+            if (!currentUser) { empty.style.display = 'block'; return; }
 
-                    gallery.forEach((project) => {
-                        const item = document.createElement('div');
-                        item.className = 'gallery-item';
-                        item.innerHTML = `
-                            <div class="gallery-item-name">${project.name}</div>
-                            <div class="gallery-item-date">${project.date}</div>
-                            <div class="gallery-item-info">${project.itemCount} items</div>
-                            <div class="gallery-item-buttons">
-                                <button style="background:linear-gradient(135deg,#c44dff,#7c4dff);" onclick="loadFromGallery(${project.id})">Open</button>
-                                <button style="background:linear-gradient(135deg,#ff6b9d,#ff8a80);" onclick="deleteFromGallery(${project.id})">Delete</button>
-                            </div>
-                        `;
-                        grid.appendChild(item);
-                    });
-                };
+            try {
+                const snapshot = await getGalleryCollection().orderBy('dateAdded', 'desc').get();
+                if (snapshot.empty) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+
+                snapshot.forEach((doc) => {
+                    const project = doc.data();
+                    const docId = doc.id;
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    item.innerHTML = `
+                        <div class="gallery-item-name">${project.name}</div>
+                        <div class="gallery-item-date">${project.date}</div>
+                        <div class="gallery-item-info">${project.itemCount} items</div>
+                        <div class="gallery-item-buttons">
+                            <button style="background:linear-gradient(135deg,#c44dff,#7c4dff);" onclick="loadFromGallery('${docId}')">Open</button>
+                            <button style="background:linear-gradient(135deg,#ff6b9d,#ff8a80);" onclick="deleteFromGallery('${docId}')">Delete</button>
+                        </div>
+                    `;
+                    grid.appendChild(item);
+                });
             } catch(e) {
                 empty.style.display = 'block';
             }
         }
 
-        async function loadFromGallery(id) {
+        async function loadFromGallery(docId) {
             try {
-                const db = await openGalleryDB();
-                const tx = db.transaction('creations', 'readonly');
-                const request = tx.objectStore('creations').get(id);
-                request.onsuccess = () => {
-                    const project = request.result;
-                    if (!project) return;
+                const doc = await getGalleryCollection().doc(docId).get();
+                if (!doc.exists) return;
+                const project = doc.data();
 
-                    const canvas = document.getElementById('canvas');
-                    canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
-                    selectedElement = null;
+                const canvas = document.getElementById('canvas');
+                canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
+                selectedElement = null;
 
-                    const state = project.state;
-                    if (state.background) canvas.style.background = state.background;
-                    if (state.backgroundImage && state.backgroundImage !== 'none') {
-                        canvas.style.backgroundImage = state.backgroundImage;
+                const state = project.state;
+                if (state.background) canvas.style.background = state.background;
+                if (state.backgroundImage && state.backgroundImage !== 'none') {
+                    canvas.style.backgroundImage = state.backgroundImage;
+                } else {
+                    canvas.style.backgroundImage = 'none';
+                }
+                state.elements.forEach(item => {
+                    const el = createCanvasElement();
+                    el.style.left = item.left;
+                    el.style.top = item.top;
+                    el.style.zIndex = item.zIndex;
+                    if (item.fontSize) el.style.fontSize = item.fontSize;
+                    if (item.fontFamily) el.style.fontFamily = item.fontFamily;
+                    if (item.fontWeight) el.style.fontWeight = item.fontWeight;
+                    if (item.fontStyle) el.style.fontStyle = item.fontStyle;
+                    if (item.color) el.style.color = item.color;
+                    if (item.lineHeight) el.style.lineHeight = item.lineHeight;
+                    if (item.width) el.style.width = item.width;
+                    if (item.type === 'image') {
+                        const img = document.createElement('img');
+                        img.src = item.imgSrc;
+                        if (item.imgWidth) img.style.width = item.imgWidth;
+                        img.style.height = 'auto';
+                        el.appendChild(img);
                     } else {
-                        canvas.style.backgroundImage = 'none';
+                        el.classList.add('canvas-text');
+                        const textNode = document.createTextNode(item.text);
+                        el.insertBefore(textNode, el.firstChild);
                     }
-                    state.elements.forEach(item => {
-                        const el = createCanvasElement();
-                        el.style.left = item.left;
-                        el.style.top = item.top;
-                        el.style.zIndex = item.zIndex;
-                        if (item.fontSize) el.style.fontSize = item.fontSize;
-                        if (item.fontFamily) el.style.fontFamily = item.fontFamily;
-                        if (item.fontWeight) el.style.fontWeight = item.fontWeight;
-                        if (item.fontStyle) el.style.fontStyle = item.fontStyle;
-                        if (item.color) el.style.color = item.color;
-                        if (item.lineHeight) el.style.lineHeight = item.lineHeight;
-                        if (item.width) el.style.width = item.width;
-                        if (item.type === 'image') {
-                            const img = document.createElement('img');
-                            img.src = item.imgSrc;
-                            if (item.imgWidth) img.style.width = item.imgWidth;
-                            img.style.height = 'auto';
-                            el.appendChild(img);
-                        } else {
-                            el.classList.add('canvas-text');
-                            const textNode = document.createTextNode(item.text);
-                            el.insertBefore(textNode, el.firstChild);
-                        }
-                        canvas.appendChild(el);
-                    });
-                    zCounter = state.elements.length + 1;
-                    saveState();
-                    toggleGallery();
-                };
+                    canvas.appendChild(el);
+                });
+                zCounter = state.elements.length + 1;
+                saveState();
+                toggleGallery();
             } catch(e) {}
         }
 
-        async function deleteFromGallery(id) {
+        async function deleteFromGallery(docId) {
             if (!confirm('Delete this creation from your gallery?')) return;
             try {
-                const db = await openGalleryDB();
-                const tx = db.transaction('creations', 'readwrite');
-                tx.objectStore('creations').delete(id);
-                tx.oncomplete = () => renderGallery();
+                await getGalleryCollection().doc(docId).delete();
+                renderGallery();
             } catch(e) {}
         }
 
@@ -1483,16 +1637,12 @@
             } catch(e) {}
         }
 
-        // Load saved state when page opens
-        document.addEventListener('DOMContentLoaded', () => {
-            // Clear old localStorage data that was causing "no space" errors
-            try {
-                localStorage.removeItem('pennysCreatorState');
-                localStorage.removeItem('pennysGallery');
-            } catch(e) {}
-            showStickerCategory('animals');
-            loadState();
-        });
+        // Clear old localStorage data on load
+        try {
+            localStorage.removeItem('pennysCreatorState');
+            localStorage.removeItem('pennysGallery');
+        } catch(e) {}
+        // Note: showStickerCategory and loadState are called by auth.onAuthStateChanged
     </script>
 </body>
 </html>
