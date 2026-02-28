@@ -1158,8 +1158,8 @@
             }
         });
 
-        // Auto-save to localStorage
-        function saveState() {
+        // Auto-save to IndexedDB
+        function getAutoSaveState() {
             const canvas = document.getElementById('canvas');
             const state = {
                 background: canvas.style.background || '#ffffff',
@@ -1168,8 +1168,6 @@
             };
             canvas.querySelectorAll('.canvas-element').forEach(el => {
                 const img = el.querySelector('img');
-                const deleteBtn = el.querySelector('.delete-btn');
-                const resizeHandle = el.querySelector('.resize-handle');
                 const item = {
                     left: el.style.left,
                     top: el.style.top,
@@ -1188,7 +1186,6 @@
                     item.imgWidth = img.style.width;
                 } else {
                     item.type = 'text';
-                    // Get text without the delete button text
                     let text = '';
                     el.childNodes.forEach(node => {
                         if (node.nodeType === 3) text += node.textContent;
@@ -1197,49 +1194,73 @@
                 }
                 state.elements.push(item);
             });
-            localStorage.setItem('pennysCreatorState', JSON.stringify(state));
+            return state;
         }
 
-        // Load from localStorage
-        function loadState() {
-            const saved = localStorage.getItem('pennysCreatorState');
-            if (!saved) return;
-            try {
-                const state = JSON.parse(saved);
-                const canvas = document.getElementById('canvas');
-                if (state.background) canvas.style.background = state.background;
-                if (state.backgroundImage && state.backgroundImage !== 'none') {
-                    canvas.style.backgroundImage = state.backgroundImage;
-                }
-                state.elements.forEach(item => {
-                    const el = createCanvasElement();
-                    el.style.left = item.left;
-                    el.style.top = item.top;
-                    el.style.zIndex = item.zIndex;
-                    if (item.fontSize) el.style.fontSize = item.fontSize;
-                    if (item.fontFamily) el.style.fontFamily = item.fontFamily;
-                    if (item.fontWeight) el.style.fontWeight = item.fontWeight;
-                    if (item.fontStyle) el.style.fontStyle = item.fontStyle;
-                    if (item.color) el.style.color = item.color;
-                    if (item.lineHeight) el.style.lineHeight = item.lineHeight;
-                    if (item.width) el.style.width = item.width;
-                    if (item.type === 'image') {
-                        const img = document.createElement('img');
-                        img.src = item.imgSrc;
-                        if (item.imgWidth) img.style.width = item.imgWidth;
-                        img.style.height = 'auto';
-                        el.appendChild(img);
-                    } else {
-                        el.classList.add('canvas-text');
-                        const textNode = document.createTextNode(item.text);
-                        el.insertBefore(textNode, el.firstChild);
+        function openAutoSaveDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PennysCreatorAutoSave', 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('autosave')) {
+                        db.createObjectStore('autosave');
                     }
-                    canvas.appendChild(el);
-                });
-                zCounter = state.elements.length + 1;
-            } catch(e) {
-                // If load fails, start fresh
-            }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        async function saveState() {
+            try {
+                const state = getAutoSaveState();
+                const db = await openAutoSaveDB();
+                const tx = db.transaction('autosave', 'readwrite');
+                tx.objectStore('autosave').put(state, 'current');
+            } catch(e) {}
+        }
+
+        async function loadState() {
+            try {
+                const db = await openAutoSaveDB();
+                const tx = db.transaction('autosave', 'readonly');
+                const request = tx.objectStore('autosave').get('current');
+                request.onsuccess = () => {
+                    const state = request.result;
+                    if (!state) return;
+                    const canvas = document.getElementById('canvas');
+                    if (state.background) canvas.style.background = state.background;
+                    if (state.backgroundImage && state.backgroundImage !== 'none') {
+                        canvas.style.backgroundImage = state.backgroundImage;
+                    }
+                    state.elements.forEach(item => {
+                        const el = createCanvasElement();
+                        el.style.left = item.left;
+                        el.style.top = item.top;
+                        el.style.zIndex = item.zIndex;
+                        if (item.fontSize) el.style.fontSize = item.fontSize;
+                        if (item.fontFamily) el.style.fontFamily = item.fontFamily;
+                        if (item.fontWeight) el.style.fontWeight = item.fontWeight;
+                        if (item.fontStyle) el.style.fontStyle = item.fontStyle;
+                        if (item.color) el.style.color = item.color;
+                        if (item.lineHeight) el.style.lineHeight = item.lineHeight;
+                        if (item.width) el.style.width = item.width;
+                        if (item.type === 'image') {
+                            const img = document.createElement('img');
+                            img.src = item.imgSrc;
+                            if (item.imgWidth) img.style.width = item.imgWidth;
+                            img.style.height = 'auto';
+                            el.appendChild(img);
+                        } else {
+                            el.classList.add('canvas-text');
+                            const textNode = document.createTextNode(item.text);
+                            el.insertBefore(textNode, el.firstChild);
+                        }
+                        canvas.appendChild(el);
+                    });
+                    zCounter = state.elements.length + 1;
+                };
+            } catch(e) {}
         }
 
         // Auto-save after any change
@@ -1254,12 +1275,16 @@
 
         // Override clear to also clear saved state
         const origClear = clearCanvas;
-        function clearCanvas() {
+        async function clearCanvas() {
             if (!confirm('Are you sure you want to clear everything?')) return;
             const canvas = document.getElementById('canvas');
             canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
             selectedElement = null;
-            localStorage.removeItem('pennysCreatorState');
+            try {
+                const db = await openAutoSaveDB();
+                const tx = db.transaction('autosave', 'readwrite');
+                tx.objectStore('autosave').delete('current');
+            } catch(e) {}
         }
 
         // IndexedDB for gallery (way more storage than localStorage)
@@ -1444,14 +1469,18 @@
             } catch(e) {}
         }
 
-        function newProject() {
+        async function newProject() {
             if (!confirm('Start a new project? Make sure you saved your current one first!')) return;
             const canvas = document.getElementById('canvas');
             canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
             canvas.style.background = '#ffffff';
             canvas.style.backgroundImage = 'none';
             selectedElement = null;
-            localStorage.removeItem('pennysCreatorState');
+            try {
+                const db = await openAutoSaveDB();
+                const tx = db.transaction('autosave', 'readwrite');
+                tx.objectStore('autosave').delete('current');
+            } catch(e) {}
         }
 
         // Load saved state when page opens
