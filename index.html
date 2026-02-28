@@ -969,7 +969,7 @@
                         // Shrink the image to save storage space
                         const tempImg = new Image();
                         tempImg.onload = function() {
-                            const maxSize = 400;
+                            const maxSize = 300;
                             let w = tempImg.width;
                             let h = tempImg.height;
                             if (w > maxSize || h > maxSize) {
@@ -1289,7 +1289,24 @@
                 };
                 if (img) {
                     item.type = 'image';
-                    item.imgSrc = img.src;
+                    // Shrink image for gallery storage
+                    try {
+                        const shrinkCanvas = document.createElement('canvas');
+                        const maxSave = 200;
+                        let w = img.naturalWidth || 200;
+                        let h = img.naturalHeight || 200;
+                        if (w > maxSave || h > maxSave) {
+                            if (w > h) { h = Math.round(h * maxSave / w); w = maxSave; }
+                            else { w = Math.round(w * maxSave / h); h = maxSave; }
+                        }
+                        shrinkCanvas.width = w;
+                        shrinkCanvas.height = h;
+                        const sctx = shrinkCanvas.getContext('2d');
+                        sctx.drawImage(img, 0, 0, w, h);
+                        item.imgSrc = shrinkCanvas.toDataURL('image/jpeg', 0.6);
+                    } catch(e) {
+                        item.imgSrc = img.src;
+                    }
                     item.imgWidth = img.style.width;
                 } else {
                     item.type = 'text';
@@ -1313,9 +1330,8 @@
                 localStorage.setItem('pennysGallery', JSON.stringify(gallery));
                 alert('Saved "' + name + '" to your gallery!');
             } catch(e) {
-                // Storage full - try shrinking images
-                gallery.pop(); // remove the one we just added
-                alert('Not enough space to save! Try using fewer or smaller pictures.');
+                gallery.pop();
+                alert('Storage is full! Try deleting old creations from your gallery first.');
             }
         }
 
