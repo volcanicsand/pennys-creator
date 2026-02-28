@@ -1485,6 +1485,11 @@
 
         // Load saved state when page opens
         document.addEventListener('DOMContentLoaded', () => {
+            // Clear old localStorage data that was causing "no space" errors
+            try {
+                localStorage.removeItem('pennysCreatorState');
+                localStorage.removeItem('pennysGallery');
+            } catch(e) {}
             showStickerCategory('animals');
             loadState();
         });
