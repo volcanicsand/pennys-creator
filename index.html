@@ -1455,7 +1455,7 @@
                         shrinkCanvas.height = h;
                         const sctx = shrinkCanvas.getContext('2d');
                         sctx.drawImage(img, 0, 0, w, h);
-                        item.imgSrc = shrinkCanvas.toDataURL('image/jpeg', 0.5);
+                        item.imgSrc = shrinkCanvas.toDataURL('image/png');
                     } catch(e) {
                         item.imgSrc = img.src;
                     }
