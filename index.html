@@ -544,6 +544,7 @@
             color: #c44dff;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -682,6 +683,7 @@
             <div class="bottom-bar">
                 <button class="btn btn-purple" onclick="saveToGallery()">Save to Gallery</button>
                 <button class="btn btn-blue" onclick="toggleGallery()">My Gallery</button>
+                <button class="btn btn-green" onclick="saveAsImage()">📸 Save to Photos</button>
                 <button class="btn btn-green" onclick="newProject()">New Project</button>
                 <button class="btn btn-pink" onclick="clearCanvas()">Clear All</button>
             </div>
@@ -1246,61 +1248,23 @@
         }
 
         // Save as image
-        function saveAsImage() {
-            // Deselect everything first
+        async function saveAsImage() {
             if (selectedElement) selectedElement.classList.remove('selected');
             selectedElement = null;
-
             const canvas = document.getElementById('canvas');
-
-            // Use html2canvas-style approach with a simple canvas export
-            // For now, we'll take a screenshot-like approach
-            const htmlCanvas = document.createElement('canvas');
-            htmlCanvas.width = 800;
-            htmlCanvas.height = 560;
-            const ctx = htmlCanvas.getContext('2d');
-
-            // Draw background
-            const bgColor = canvas.style.background || '#ffffff';
-            const bgImage = canvas.style.backgroundImage;
-
-            if (bgImage && bgImage !== 'none') {
-                // For gradients, we'll draw the element
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 800, 560);
-
-                // Create a temporary canvas to render gradient
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = 800;
-                tempCanvas.height = 560;
-                const tempEl = document.createElement('div');
-                tempEl.style.width = '800px';
-                tempEl.style.height = '560px';
-                tempEl.style.backgroundImage = bgImage;
-            }
-
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, 800, 560);
-
-            // Simple save - alert user about limitation
-            // Use the Blob approach for better compatibility
-            const elements = canvas.querySelectorAll('.canvas-element');
-
-            if (elements.length === 0 && (!bgImage || bgImage === 'none')) {
-                // Simple solid background, just save
-                htmlCanvas.toBlob(function(blob) {
+            try {
+                const imageCanvas = await html2canvas(canvas, { useCORS: true, allowTaint: true, backgroundColor: null });
+                imageCanvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'pennys-creation.png';
+                    a.download = 'my-creation.png';
                     a.click();
                     URL.revokeObjectURL(url);
                 });
-                return;
+            } catch(e) {
+                alert('Could not save — try using Snipping Tool (Windows + Shift + S) to capture your design!');
             }
-
-            // For complex saves, use a workaround
-            alert('Tip: To save your creation, press the Print Screen key or use Snipping Tool (Windows + Shift + S) to capture your design!');
         }
 
         // Keyboard shortcuts
