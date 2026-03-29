@@ -661,6 +661,11 @@
                     <button class="btn btn-blue" onclick="resizeSelected(0.7)" style="font-size:1.2em;">Smaller -</button>
                 </div>
                 <button class="btn btn-green" onclick="removeBackground()" style="font-size:1.1em;">Remove Background</button>
+                <h3 style="margin-top:8px;">Rotate</h3>
+                <div class="text-style-row">
+                    <button class="btn btn-blue" onclick="rotateSelected(-15)" style="font-size:1.2em;">↺</button>
+                    <button class="btn btn-blue" onclick="rotateSelected(15)" style="font-size:1.2em;">↻</button>
+                </div>
                 <h3 style="margin-top:8px;">Layer</h3>
                 <div class="text-style-row">
                     <div class="layer-btn" onclick="moveLayer('up')">Bring Forward</div>
@@ -1182,6 +1187,15 @@
             }
         }
 
+        function rotateSelected(degrees) {
+            if (!selectedElement) return;
+            const current = parseFloat(selectedElement.dataset.rotation || '0');
+            const next = current + degrees;
+            selectedElement.dataset.rotation = next;
+            selectedElement.style.transform = `rotate(${next}deg)`;
+            saveState();
+        }
+
         // Layer controls
         function moveLayer(direction) {
             if (!selectedElement) return;
@@ -1300,7 +1314,8 @@
                     fontStyle: el.style.fontStyle,
                     color: el.style.color,
                     lineHeight: el.style.lineHeight,
-                    width: el.style.width
+                    width: el.style.width,
+                    rotation: el.dataset.rotation || '0'
                 };
                 if (img) {
                     item.type = 'image';
@@ -1437,7 +1452,8 @@
                     fontStyle: el.style.fontStyle,
                     color: el.style.color,
                     lineHeight: el.style.lineHeight,
-                    width: el.style.width
+                    width: el.style.width,
+                    rotation: el.dataset.rotation || '0'
                 };
                 if (img) {
                     item.type = 'image';
@@ -1568,6 +1584,10 @@
                     if (item.color) el.style.color = item.color;
                     if (item.lineHeight) el.style.lineHeight = item.lineHeight;
                     if (item.width) el.style.width = item.width;
+                    if (item.rotation && item.rotation !== '0') {
+                        el.dataset.rotation = item.rotation;
+                        el.style.transform = `rotate(${item.rotation}deg)`;
+                    }
                     if (item.type === 'image') {
                         const img = document.createElement('img');
                         img.src = item.imgSrc;
