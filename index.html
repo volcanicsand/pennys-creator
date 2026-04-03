@@ -665,18 +665,29 @@
                 <button class="draw-mode-toggle" id="drawModeToggle" onclick="toggleDrawMode()">✏️ Start Drawing</button>
                 <div class="draw-controls" id="drawControls">
                     <div class="draw-tool-group">
-                        <div class="draw-tool-btn active" id="toolBrush" onclick="setDrawTool('brush')">🖌️ Brush</div>
-                        <div class="draw-tool-btn" id="toolEraser" onclick="setDrawTool('eraser')">🩹 Eraser</div>
-                        <div class="draw-tool-btn" id="toolSmudge" onclick="setDrawTool('smudge')">💧 Blend</div>
+                        <div class="draw-tool-btn active" id="toolBrush" onclick="setDrawTool('brush')">🖌️</div>
+                        <div class="draw-tool-btn" id="toolPencil" onclick="setDrawTool('pencil')">✏️</div>
+                        <div class="draw-tool-btn" id="toolMarker" onclick="setDrawTool('marker')">🖊️</div>
+                        <div class="draw-tool-btn" id="toolEraser" onclick="setDrawTool('eraser')">🩹</div>
+                        <div class="draw-tool-btn" id="toolSmudge" onclick="setDrawTool('smudge')">💧</div>
                     </div>
                     <div class="size-row">
                         <label>Thin</label>
                         <input type="range" class="size-slider" id="brushSizeSlider" min="2" max="60" value="12" oninput="brushSize=parseInt(this.value)">
                         <label>Thick</label>
                     </div>
+                    <div class="size-row">
+                        <label>Clear</label>
+                        <input type="range" class="size-slider" id="brushOpacitySlider" min="5" max="100" value="85" oninput="brushOpacity=parseInt(this.value)/100">
+                        <label>Solid</label>
+                    </div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                         <label style="font-size:0.8em; color:#777;">Color:</label>
                         <input type="color" id="brushColorInput" value="#ff6b9d" style="flex:1; height:32px; border-radius:8px; border:2px solid #ddd; cursor:pointer;" oninput="brushColor=this.value">
+                    </div>
+                    <div style="display:flex; gap:5px; margin-bottom:6px;">
+                        <button class="btn btn-purple" style="font-size:0.8em; padding:6px;" onclick="undoDraw()">↩️ Undo</button>
+                        <button class="btn btn-blue" style="font-size:0.8em; padding:6px;" onclick="redoDraw()">↪️ Redo</button>
                     </div>
                     <button class="btn btn-pink" style="font-size:0.85em;" onclick="clearDrawing()">Clear Drawing</button>
                 </div>
@@ -937,11 +948,37 @@
         let currentDrawTool = 'brush';
         let brushColor = '#ff6b9d';
         let brushSize = 12;
+        let brushOpacity = 0.85;
         let isDrawing = false;
         let lastDrawX = 0, lastDrawY = 0;
+        let smudgeBuffer = null;
+        const undoStack = [];
+        const redoStack = [];
+        const MAX_UNDO = 20;
 
         const drawingCanvas = document.getElementById('drawingCanvas');
         const dctx = drawingCanvas.getContext('2d');
+        const smudgeTmp = document.createElement('canvas');
+
+        function pushUndo() {
+            undoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
+            if (undoStack.length > MAX_UNDO) undoStack.shift();
+            redoStack.length = 0;
+        }
+
+        function undoDraw() {
+            if (undoStack.length === 0) return;
+            redoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
+            dctx.putImageData(undoStack.pop(), 0, 0);
+            saveState();
+        }
+
+        function redoDraw() {
+            if (redoStack.length === 0) return;
+            undoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
+            dctx.putImageData(redoStack.pop(), 0, 0);
+            saveState();
+        }
 
         function toggleDrawMode() {
             drawMode = !drawMode;
@@ -979,64 +1016,89 @@
             };
         }
 
+        function initSmudge(x, y) {
+            const r = Math.max(4, Math.ceil(brushSize));
+            const x0 = Math.max(0, Math.floor(x - r));
+            const y0 = Math.max(0, Math.floor(y - r));
+            const w = Math.min(drawingCanvas.width - x0, r * 2);
+            const h = Math.min(drawingCanvas.height - y0, r * 2);
+            if (w > 0 && h > 0) {
+                smudgeBuffer = { imageData: dctx.getImageData(x0, y0, w, h), x0, y0, w, h, r };
+            }
+        }
+
+        function doSmudge(x, y) {
+            if (!smudgeBuffer) return;
+            const { w, h, r } = smudgeBuffer;
+            // Draw the picked-up paint at the new position (drag it forward)
+            smudgeTmp.width = w; smudgeTmp.height = h;
+            smudgeTmp.getContext('2d').putImageData(smudgeBuffer.imageData, 0, 0);
+            dctx.globalAlpha = 0.55;
+            dctx.drawImage(smudgeTmp, x - r, y - r);
+            dctx.globalAlpha = 1.0;
+            // Pick up blended result at new position for next step
+            const nx0 = Math.max(0, Math.floor(x - r));
+            const ny0 = Math.max(0, Math.floor(y - r));
+            const nw = Math.min(drawingCanvas.width - nx0, r * 2);
+            const nh = Math.min(drawingCanvas.height - ny0, r * 2);
+            if (nw > 0 && nh > 0) {
+                smudgeBuffer = { imageData: dctx.getImageData(nx0, ny0, nw, nh), x0: nx0, y0: ny0, w: nw, h: nh, r };
+            }
+        }
+
         function doDraw(x, y) {
+            dctx.globalCompositeOperation = 'source-over';
             if (currentDrawTool === 'brush') {
-                dctx.globalCompositeOperation = 'source-over';
                 dctx.strokeStyle = brushColor;
                 dctx.lineWidth = brushSize;
                 dctx.lineCap = 'round';
                 dctx.lineJoin = 'round';
-                dctx.globalAlpha = 0.85;
+                dctx.globalAlpha = brushOpacity;
                 dctx.beginPath();
                 dctx.moveTo(lastDrawX, lastDrawY);
                 dctx.lineTo(x, y);
                 dctx.stroke();
-                dctx.globalAlpha = 1.0;
+            } else if (currentDrawTool === 'pencil') {
+                dctx.strokeStyle = brushColor;
+                dctx.lineWidth = Math.max(1, brushSize * 0.4);
+                dctx.lineCap = 'round';
+                dctx.lineJoin = 'round';
+                dctx.globalAlpha = brushOpacity * 0.7;
+                dctx.beginPath();
+                dctx.moveTo(lastDrawX, lastDrawY);
+                dctx.lineTo(x, y);
+                dctx.stroke();
+            } else if (currentDrawTool === 'marker') {
+                dctx.strokeStyle = brushColor;
+                dctx.lineWidth = brushSize * 1.4;
+                dctx.lineCap = 'square';
+                dctx.lineJoin = 'round';
+                dctx.globalAlpha = Math.min(1, brushOpacity * 0.6);
+                dctx.beginPath();
+                dctx.moveTo(lastDrawX, lastDrawY);
+                dctx.lineTo(x, y);
+                dctx.stroke();
             } else if (currentDrawTool === 'eraser') {
                 dctx.globalCompositeOperation = 'destination-out';
                 dctx.lineWidth = brushSize * 1.5;
                 dctx.lineCap = 'round';
                 dctx.lineJoin = 'round';
+                dctx.globalAlpha = 1.0;
                 dctx.beginPath();
                 dctx.moveTo(lastDrawX, lastDrawY);
                 dctx.lineTo(x, y);
                 dctx.stroke();
-                dctx.globalCompositeOperation = 'source-over';
             } else if (currentDrawTool === 'smudge') {
                 doSmudge(x, y);
             }
+            dctx.globalAlpha = 1.0;
+            dctx.globalCompositeOperation = 'source-over';
             lastDrawX = x;
             lastDrawY = y;
         }
 
-        function doSmudge(x, y) {
-            const r = Math.max(4, Math.ceil(brushSize * 0.8));
-            const x0 = Math.max(0, Math.floor(x - r));
-            const y0 = Math.max(0, Math.floor(y - r));
-            const w = Math.min(drawingCanvas.width - x0, r * 2);
-            const h = Math.min(drawingCanvas.height - y0, r * 2);
-            if (w <= 2 || h <= 2) return;
-            const imageData = dctx.getImageData(x0, y0, w, h);
-            const src = imageData.data;
-            const dst = new Uint8ClampedArray(src);
-            for (let py = 1; py < h - 1; py++) {
-                for (let px = 1; px < w - 1; px++) {
-                    const i = (py * w + px) * 4;
-                    for (let c = 0; c < 4; c++) {
-                        dst[i + c] = Math.round(
-                            (src[i + c] * 2 +
-                             src[((py-1)*w + px)*4 + c] +
-                             src[((py+1)*w + px)*4 + c] +
-                             src[(py*w + (px-1))*4 + c] +
-                             src[(py*w + (px+1))*4 + c]) / 6
-                        );
-                    }
-                }
-            }
-            dctx.putImageData(new ImageData(dst, w, h), x0, y0);
-        }
-
         function clearDrawing() {
+            pushUndo();
             dctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
             saveState();
         }
@@ -1044,10 +1106,12 @@
         // Drawing mouse events
         drawingCanvas.addEventListener('mousedown', (e) => {
             if (!drawMode) return;
+            pushUndo();
             isDrawing = true;
             const pos = getDrawPos(e);
             lastDrawX = pos.x; lastDrawY = pos.y;
-            doDraw(pos.x, pos.y);
+            if (currentDrawTool === 'smudge') initSmudge(pos.x, pos.y);
+            else doDraw(pos.x, pos.y);
             e.preventDefault();
         });
         drawingCanvas.addEventListener('mousemove', (e) => {
@@ -1056,16 +1120,18 @@
             doDraw(pos.x, pos.y);
             e.preventDefault();
         });
-        drawingCanvas.addEventListener('mouseup', () => { isDrawing = false; saveState(); });
-        drawingCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
+        drawingCanvas.addEventListener('mouseup', () => { isDrawing = false; smudgeBuffer = null; saveState(); });
+        drawingCanvas.addEventListener('mouseleave', () => { isDrawing = false; smudgeBuffer = null; });
 
         // Drawing touch events
         drawingCanvas.addEventListener('touchstart', (e) => {
             if (!drawMode) return;
+            pushUndo();
             isDrawing = true;
             const pos = getDrawPos(e);
             lastDrawX = pos.x; lastDrawY = pos.y;
-            doDraw(pos.x, pos.y);
+            if (currentDrawTool === 'smudge') initSmudge(pos.x, pos.y);
+            else doDraw(pos.x, pos.y);
             e.preventDefault();
         }, { passive: false });
         drawingCanvas.addEventListener('touchmove', (e) => {
@@ -1074,7 +1140,7 @@
             doDraw(pos.x, pos.y);
             e.preventDefault();
         }, { passive: false });
-        drawingCanvas.addEventListener('touchend', () => { isDrawing = false; saveState(); });
+        drawingCanvas.addEventListener('touchend', () => { isDrawing = false; smudgeBuffer = null; saveState(); });
 
         // Background colors
         document.querySelectorAll('.color-swatch').forEach(swatch => {
@@ -1552,6 +1618,14 @@
             if (e.key === 'Escape') {
                 if (selectedElement) selectedElement.classList.remove('selected');
                 selectedElement = null;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undoDraw();
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redoDraw();
             }
         });
 
