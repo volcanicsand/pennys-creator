@@ -545,18 +545,56 @@
         }
 
         /* Draw tools */
-        #drawingCanvas {
+        #eventCanvas {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
             z-index: 50;
             border-radius: 12px;
-        }
-        #drawingCanvas.draw-active {
-            pointer-events: all;
             cursor: crosshair;
         }
+        #eventCanvas.draw-active { pointer-events: all; }
+        #gridCanvas, #shapePreviewCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            border-radius: 12px;
+        }
+        .shape-type-btn {
+            padding: 4px 6px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.72em;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .shape-type-btn.active {
+            border-color: #c44dff;
+            background: linear-gradient(135deg, #f3e5ff, #e8d5ff);
+            color: #c44dff;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 8px;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            margin-bottom: 4px;
+            cursor: pointer;
+            background: white;
+            font-size: 0.82em;
+        }
+        .layer-item.active {
+            border-color: #c44dff;
+            background: #f3e5ff;
+            font-weight: 700;
+        }
+        .layer-name { flex: 1; }
+        .layer-eye { cursor: pointer; font-size: 1.1em; }
         .draw-tool-group {
             display: flex;
             gap: 5px;
@@ -664,12 +702,39 @@
                 <h3>🎨 Paint</h3>
                 <button class="draw-mode-toggle" id="drawModeToggle" onclick="toggleDrawMode()">✏️ Start Drawing</button>
                 <div class="draw-controls" id="drawControls">
+                    <div style="font-size:0.75em;color:#aaa;margin-bottom:3px;">Basic</div>
                     <div class="draw-tool-group">
-                        <div class="draw-tool-btn active" id="toolBrush" onclick="setDrawTool('brush')">🖌️</div>
-                        <div class="draw-tool-btn" id="toolPencil" onclick="setDrawTool('pencil')">✏️</div>
-                        <div class="draw-tool-btn" id="toolMarker" onclick="setDrawTool('marker')">🖊️</div>
-                        <div class="draw-tool-btn" id="toolEraser" onclick="setDrawTool('eraser')">🩹</div>
-                        <div class="draw-tool-btn" id="toolSmudge" onclick="setDrawTool('smudge')">💧</div>
+                        <div class="draw-tool-btn active" id="tool_brush" onclick="setDrawTool('brush')" title="Brush">🖌️</div>
+                        <div class="draw-tool-btn" id="tool_pencil" onclick="setDrawTool('pencil')" title="Pencil">✏️</div>
+                        <div class="draw-tool-btn" id="tool_marker" onclick="setDrawTool('marker')" title="Marker">🖊️</div>
+                        <div class="draw-tool-btn" id="tool_eraser" onclick="setDrawTool('eraser')" title="Eraser">🩹</div>
+                        <div class="draw-tool-btn" id="tool_smudge" onclick="setDrawTool('smudge')" title="Blend">💧</div>
+                    </div>
+                    <div style="font-size:0.75em;color:#aaa;margin-bottom:3px;">Special</div>
+                    <div class="draw-tool-group">
+                        <div class="draw-tool-btn" id="tool_airbrush" onclick="setDrawTool('airbrush')" title="Airbrush">💨</div>
+                        <div class="draw-tool-btn" id="tool_spray" onclick="setDrawTool('spray')" title="Spray">🎇</div>
+                        <div class="draw-tool-btn" id="tool_fire" onclick="setDrawTool('fire')" title="Fire">🔥</div>
+                        <div class="draw-tool-btn" id="tool_sparkle" onclick="setDrawTool('sparkle')" title="Sparkle">✨</div>
+                        <div class="draw-tool-btn" id="tool_rainbow" onclick="setDrawTool('rainbow')" title="Rainbow">🌈</div>
+                    </div>
+                    <div class="draw-tool-group">
+                        <div class="draw-tool-btn" id="tool_wobbly" onclick="setDrawTool('wobbly')" title="Wobbly">🌊</div>
+                        <div class="draw-tool-btn" id="tool_star" onclick="setDrawTool('star')" title="Star Stamp">⭐</div>
+                        <div class="draw-tool-btn" id="tool_flower" onclick="setDrawTool('flower')" title="Flower">🌸</div>
+                        <div class="draw-tool-btn" id="tool_bubble" onclick="setDrawTool('bubble')" title="Bubbles">🔵</div>
+                        <div class="draw-tool-btn" id="tool_shape" onclick="setDrawTool('shape')" title="Shapes">⭕</div>
+                    </div>
+                    <div class="draw-tool-group">
+                        <div class="draw-tool-btn" id="tool_bucket" onclick="setDrawTool('bucket')" title="Fill">🪣</div>
+                        <div class="draw-tool-btn" id="tool_eyedropper" onclick="setDrawTool('eyedropper')" title="Pick Color">🔮</div>
+                    </div>
+                    <div id="shapeControls" style="display:none; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+                        <div class="shape-type-btn active" id="shape_line" onclick="setShapeType('line')">Line</div>
+                        <div class="shape-type-btn" id="shape_rect" onclick="setShapeType('rect')">▭ Rect</div>
+                        <div class="shape-type-btn" id="shape_circle" onclick="setShapeType('circle')">⭕</div>
+                        <div class="shape-type-btn" id="shape_triangle" onclick="setShapeType('triangle')">△ Tri</div>
+                        <div class="shape-type-btn" id="shape_star" onclick="setShapeType('star')">⭐</div>
                     </div>
                     <div class="size-row">
                         <label>Thin</label>
@@ -685,11 +750,48 @@
                         <label style="font-size:0.8em; color:#777;">Color:</label>
                         <input type="color" id="brushColorInput" value="#ff6b9d" style="flex:1; height:32px; border-radius:8px; border:2px solid #ddd; cursor:pointer;" oninput="brushColor=this.value">
                     </div>
+                    <div style="font-size:0.75em;color:#aaa;margin-bottom:3px;">🔁 Symmetry</div>
+                    <div class="draw-tool-group" style="margin-bottom:8px;">
+                        <div class="draw-tool-btn sym-btn active" id="sym-none" onclick="setSymmetry('none')">Off</div>
+                        <div class="draw-tool-btn sym-btn" id="sym-h" onclick="setSymmetry('h')">↔️ H</div>
+                        <div class="draw-tool-btn sym-btn" id="sym-v" onclick="setSymmetry('v')">↕️ V</div>
+                        <div class="draw-tool-btn sym-btn" id="sym-both" onclick="setSymmetry('both')">✳️ 4</div>
+                    </div>
+                    <div class="draw-tool-group" style="margin-bottom:8px;">
+                        <div class="draw-tool-btn" id="gridToggleBtn" onclick="toggleGrid()">🔲 Grid</div>
+                        <div class="draw-tool-btn" id="snapGridBtn" onclick="toggleSnapGrid()">📐 Snap</div>
+                        <div class="draw-tool-btn" onclick="glitterFill()">🌟 Glitter</div>
+                        <div class="draw-tool-btn" onclick="flipDrawing('h')">↔ Flip</div>
+                        <div class="draw-tool-btn" onclick="flipDrawing('v')">↕ Flip</div>
+                    </div>
                     <div style="display:flex; gap:5px; margin-bottom:6px;">
                         <button class="btn btn-purple" style="font-size:0.8em; padding:6px;" onclick="undoDraw()">↩️ Undo</button>
                         <button class="btn btn-blue" style="font-size:0.8em; padding:6px;" onclick="redoDraw()">↪️ Redo</button>
                     </div>
-                    <button class="btn btn-pink" style="font-size:0.85em;" onclick="clearDrawing()">Clear Drawing</button>
+                    <button class="btn btn-pink" style="font-size:0.85em;" onclick="clearDrawing()">🗑️ Clear Drawing</button>
+                </div>
+            </div>
+
+            <!-- Layers Section -->
+            <div class="tool-section">
+                <h3>📚 Layers</h3>
+                <div id="layerList"></div>
+                <div style="display:flex; gap:5px; margin-top:6px;">
+                    <button class="btn btn-green" style="font-size:0.8em; padding:7px;" onclick="addLayer()">+ Add Layer</button>
+                    <button class="btn btn-pink" style="font-size:0.8em; padding:7px;" onclick="deleteActiveLayer()">🗑️ Delete</button>
+                </div>
+            </div>
+
+            <!-- Photo Frame Section -->
+            <div class="tool-section">
+                <h3>📸 Photo Frame</h3>
+                <div class="draw-tool-group" style="flex-wrap:wrap; gap:5px;">
+                    <div class="draw-tool-btn active" id="frame_none" onclick="setPhotoFrame('none')">None</div>
+                    <div class="draw-tool-btn" id="frame_gold" onclick="setPhotoFrame('gold')">✨ Gold</div>
+                    <div class="draw-tool-btn" id="frame_rainbow" onclick="setPhotoFrame('rainbow')">🌈</div>
+                    <div class="draw-tool-btn" id="frame_hearts" onclick="setPhotoFrame('hearts')">💗 Hearts</div>
+                    <div class="draw-tool-btn" id="frame_stars" onclick="setPhotoFrame('stars')">⭐ Stars</div>
+                    <div class="draw-tool-btn" id="frame_nature" onclick="setPhotoFrame('nature')">🌿 Nature</div>
                 </div>
             </div>
 
@@ -740,6 +842,12 @@
                     <option value="Comic Sans MS">Comic</option>
                     <option value="Arial Black">Thick</option>
                     <option value="Brush Script MT">Script</option>
+                    <option value="Papyrus">Papyrus</option>
+                    <option value="Trebuchet MS">Rounded</option>
+                    <option value="Verdana">Clean</option>
+                    <option value="Palatino Linotype">Elegant</option>
+                    <option value="Lucida Handwriting">Handwriting</option>
+                    <option value="Fantasy">Fantasy</option>
                 </select>
                 <select class="font-size-select" id="fontSizeSelect">
                     <option value="16">Small</option>
@@ -806,7 +914,10 @@
         <!-- Canvas -->
         <div class="canvas-container">
             <div class="canvas-wrapper" id="canvas">
-                <canvas id="drawingCanvas" width="800" height="560"></canvas>
+                <canvas id="gridCanvas" width="800" height="560" style="z-index:47;"></canvas>
+                <canvas id="shapePreviewCanvas" width="800" height="560" style="z-index:48;"></canvas>
+                <canvas id="eventCanvas" width="800" height="560"></canvas>
+                <div id="photoFrame" style="display:none; position:absolute; inset:0; pointer-events:none; z-index:55; border-radius:12px;"></div>
             </div>
             <div class="bottom-bar">
                 <button class="btn btn-blue" onclick="resizeSelected(1.3)">Bigger +</button>
@@ -888,6 +999,7 @@
                 document.getElementById('userBar').style.display = 'block';
                 document.getElementById('userBar').textContent = user.email + ' (log out)';
                 showStickerCategory('animals');
+                initLayers();
                 loadState();
             } else {
                 document.getElementById('loginScreen').style.display = 'flex';
@@ -943,7 +1055,75 @@
         let zCounter = 1;
         let textStyles = { bold: false, italic: false };
 
-        // Drawing state
+        // ===== LAYER SYSTEM =====
+        let layers = [];
+        let activeLayerIndex = 0;
+
+        const eventCanvas = document.getElementById('eventCanvas');
+        const gridCanvas = document.getElementById('gridCanvas');
+        const shapePreviewCanvas = document.getElementById('shapePreviewCanvas');
+        const gridCtx = gridCanvas.getContext('2d');
+        const shapeCtx = shapePreviewCanvas.getContext('2d');
+        const smudgeTmp = document.createElement('canvas');
+
+        function getActiveCtx() { return layers[activeLayerIndex] ? layers[activeLayerIndex].ctx : null; }
+        function getActiveCv() { return layers[activeLayerIndex] ? layers[activeLayerIndex].canvas : null; }
+
+        function addLayer(name) {
+            if (layers.length >= 5) { alert('Maximum 5 layers!'); return; }
+            const c = document.createElement('canvas');
+            c.width = 800; c.height = 560;
+            c.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;border-radius:12px;';
+            c.style.zIndex = layers.length + 2;
+            document.getElementById('canvas').insertBefore(c, gridCanvas);
+            const layer = { canvas: c, ctx: c.getContext('2d'), name: name || ('Layer ' + (layers.length + 1)), visible: true };
+            layers.push(layer);
+            setActiveLayer(layers.length - 1);
+            renderLayerPanel();
+            return layer;
+        }
+
+        function deleteActiveLayer() {
+            if (layers.length <= 1) { alert("Can't delete the last layer!"); return; }
+            if (!confirm('Delete this layer?')) return;
+            layers[activeLayerIndex].canvas.remove();
+            layers.splice(activeLayerIndex, 1);
+            setActiveLayer(Math.min(activeLayerIndex, layers.length - 1));
+            renderLayerPanel();
+            saveState();
+        }
+
+        function setActiveLayer(idx) {
+            activeLayerIndex = Math.max(0, Math.min(idx, layers.length - 1));
+            renderLayerPanel();
+        }
+
+        function toggleLayerVisibility(idx) {
+            layers[idx].visible = !layers[idx].visible;
+            layers[idx].canvas.style.opacity = layers[idx].visible ? '1' : '0';
+            renderLayerPanel();
+        }
+
+        function renderLayerPanel() {
+            const panel = document.getElementById('layerList');
+            if (!panel) return;
+            panel.innerHTML = '';
+            for (let i = layers.length - 1; i >= 0; i--) {
+                const layer = layers[i];
+                const item = document.createElement('div');
+                item.className = 'layer-item' + (i === activeLayerIndex ? ' active' : '');
+                item.innerHTML = '<span class="layer-name" onclick="setActiveLayer(' + i + ')">' + layer.name + '</span><span class="layer-eye" onclick="toggleLayerVisibility(' + i + ')">' + (layer.visible ? '👁️' : '🚫') + '</span>';
+                panel.appendChild(item);
+            }
+        }
+
+        function initLayers() {
+            if (layers.length === 0) {
+                addLayer('Layer 1');
+            }
+        }
+
+        // ===== DRAWING STATE =====
         let drawMode = false;
         let currentDrawTool = 'brush';
         let brushColor = '#ff6b9d';
@@ -952,195 +1132,166 @@
         let isDrawing = false;
         let lastDrawX = 0, lastDrawY = 0;
         let smudgeBuffer = null;
+        let symmetryMode = 'none';
+        let showGrid = false;
+        let snapGrid = false;
+        let rainbowHue = 0;
+        let shapeType = 'line';
+        let shapeStart = null;
         const undoStack = [];
         const redoStack = [];
         const MAX_UNDO = 20;
 
-        const drawingCanvas = document.getElementById('drawingCanvas');
-        const dctx = drawingCanvas.getContext('2d');
-        const smudgeTmp = document.createElement('canvas');
+        // ===== UNDO/REDO =====
+        function getAllLayerStates(){return layers.map(l=>l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height));}
+        function pushUndo(){undoStack.push(getAllLayerStates());if(undoStack.length>MAX_UNDO)undoStack.shift();redoStack.length=0;}
+        function undoDraw(){if(!undoStack.length)return;redoStack.push(getAllLayerStates());const p=undoStack.pop();p.forEach((d,i)=>{if(layers[i])layers[i].ctx.putImageData(d,0,0);});saveState();}
+        function redoDraw(){if(!redoStack.length)return;undoStack.push(getAllLayerStates());const n=redoStack.pop();n.forEach((d,i)=>{if(layers[i])layers[i].ctx.putImageData(d,0,0);});saveState();}
 
-        function pushUndo() {
-            undoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
-            if (undoStack.length > MAX_UNDO) undoStack.shift();
-            redoStack.length = 0;
+        // ===== DRAW MODE =====
+        function toggleDrawMode(){
+            drawMode=!drawMode;
+            const toggle=document.getElementById('drawModeToggle'),controls=document.getElementById('drawControls');
+            if(drawMode){eventCanvas.classList.add('draw-active');toggle.classList.add('on');toggle.textContent='✅ Done Drawing';controls.classList.add('visible');if(selectedElement)selectedElement.classList.remove('selected');selectedElement=null;}
+            else{eventCanvas.classList.remove('draw-active');toggle.classList.remove('on');toggle.textContent='✏️ Start Drawing';controls.classList.remove('visible');shapeCtx.clearRect(0,0,800,560);}
+        }
+        function setDrawTool(tool){
+            currentDrawTool=tool;
+            document.querySelectorAll('.draw-tool-btn').forEach(b=>b.classList.remove('active'));
+            const btn=document.getElementById('tool_'+tool);if(btn)btn.classList.add('active');
+            const sc=document.getElementById('shapeControls');if(sc)sc.style.display=(tool==='shape')?'flex':'none';
+        }
+        function setShapeType(type){shapeType=type;document.querySelectorAll('.shape-type-btn').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('shape_'+type);if(btn)btn.classList.add('active');}
+        function setSymmetry(mode){symmetryMode=mode;document.querySelectorAll('.sym-btn').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('sym-'+mode);if(btn)btn.classList.add('active');}
+        function toggleGrid(){
+            showGrid=!showGrid;document.getElementById('gridToggleBtn').classList.toggle('active',showGrid);
+            gridCtx.clearRect(0,0,800,560);if(!showGrid)return;
+            gridCtx.strokeStyle='rgba(100,100,100,0.2)';gridCtx.lineWidth=1;
+            for(let x=0;x<=800;x+=40){gridCtx.beginPath();gridCtx.moveTo(x,0);gridCtx.lineTo(x,560);gridCtx.stroke();}
+            for(let y=0;y<=560;y+=40){gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(800,y);gridCtx.stroke();}
+        }
+        function toggleSnapGrid(){snapGrid=!snapGrid;document.getElementById('snapGridBtn').classList.toggle('active',snapGrid);}
+        function snapPos(v){return snapGrid?Math.round(v/40)*40:v;}
+
+        // ===== POSITION =====
+        function getDrawPos(e){
+            const rect=eventCanvas.getBoundingClientRect(),scaleX=eventCanvas.width/rect.width,scaleY=eventCanvas.height/rect.height,src=e.touches?e.touches[0]:e;
+            return{x:(src.clientX-rect.left)*scaleX,y:(src.clientY-rect.top)*scaleY};
         }
 
-        function undoDraw() {
-            if (undoStack.length === 0) return;
-            redoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
-            dctx.putImageData(undoStack.pop(), 0, 0);
-            saveState();
-        }
-
-        function redoDraw() {
-            if (redoStack.length === 0) return;
-            undoStack.push(dctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
-            dctx.putImageData(redoStack.pop(), 0, 0);
-            saveState();
-        }
-
-        function toggleDrawMode() {
-            drawMode = !drawMode;
-            const toggle = document.getElementById('drawModeToggle');
-            const controls = document.getElementById('drawControls');
-            if (drawMode) {
-                drawingCanvas.classList.add('draw-active');
-                toggle.classList.add('on');
-                toggle.textContent = '✅ Done Drawing';
-                controls.classList.add('visible');
-                if (selectedElement) selectedElement.classList.remove('selected');
-                selectedElement = null;
-            } else {
-                drawingCanvas.classList.remove('draw-active');
-                toggle.classList.remove('on');
-                toggle.textContent = '✏️ Start Drawing';
-                controls.classList.remove('visible');
+        // ===== BRUSH STROKES =====
+        function applyStroke(ctx,x,y,lx,ly){
+            ctx.globalCompositeOperation='source-over';ctx.globalAlpha=brushOpacity;
+            switch(currentDrawTool){
+                case 'brush':ctx.strokeStyle=brushColor;ctx.lineWidth=brushSize;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();break;
+                case 'pencil':ctx.strokeStyle=brushColor;ctx.lineWidth=Math.max(1,brushSize*0.4);ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=brushOpacity*0.7;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();break;
+                case 'marker':ctx.strokeStyle=brushColor;ctx.lineWidth=brushSize*1.4;ctx.lineCap='square';ctx.lineJoin='round';ctx.globalAlpha=brushOpacity*0.7;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();break;
+                case 'eraser':ctx.globalCompositeOperation='destination-out';ctx.globalAlpha=1;ctx.lineWidth=brushSize*1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();break;
+                case 'airbrush':{const r=brushSize*2,g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,brushColor);g.addColorStop(1,'transparent');ctx.globalAlpha=brushOpacity*0.18;ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();break;}
+                case 'spray':ctx.fillStyle=brushColor;for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,d=Math.random()*brushSize*2;ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,Math.random()*1.5+0.5,0,Math.PI*2);ctx.fill();}break;
+                case 'fire':{const fc=['#ff1100','#ff4400','#ff8800','#ffcc00','#fff'];for(let i=0;i<8;i++){const t=Math.random(),px2=lx+(x-lx)*t+(Math.random()-.5)*brushSize,py2=ly+(y-ly)*t-Math.random()*brushSize*1.5;ctx.globalAlpha=brushOpacity*(0.3+Math.random()*0.5);ctx.fillStyle=fc[Math.floor(Math.random()*fc.length)];ctx.beginPath();ctx.arc(px2,py2,Math.random()*brushSize*0.5+1,0,Math.PI*2);ctx.fill();}break;}
+                case 'sparkle':for(let i=0;i<5;i++){const px2=x+(Math.random()-.5)*brushSize*3,py2=y+(Math.random()-.5)*brushSize*3,sz=Math.random()*brushSize*0.4+2;ctx.save();ctx.translate(px2,py2);ctx.rotate(Math.random()*Math.PI);const sg=ctx.createRadialGradient(0,0,0,0,0,sz*2);sg.addColorStop(0,'#fff');sg.addColorStop(0.3,brushColor);sg.addColorStop(1,'transparent');ctx.fillStyle=sg;ctx.beginPath();for(let j=0;j<4;j++){const a=(j/4)*Math.PI*2;ctx.lineTo(Math.cos(a)*sz*2,Math.sin(a)*sz*2);ctx.lineTo(Math.cos(a+Math.PI/4)*sz*0.4,Math.sin(a+Math.PI/4)*sz*0.4);}ctx.closePath();ctx.fill();ctx.restore();}break;
+                case 'rainbow':rainbowHue=(rainbowHue+3)%360;ctx.strokeStyle='hsl('+rainbowHue+',100%,55%)';ctx.lineWidth=brushSize;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();break;
+                case 'wobbly':ctx.strokeStyle=brushColor;ctx.lineWidth=Math.max(1,brushSize*0.5);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(lx,ly);for(let i=1;i<=6;i++){const t=i/6;ctx.lineTo(lx+(x-lx)*t+(Math.random()-.5)*brushSize*1.5,ly+(y-ly)*t+(Math.random()-.5)*brushSize*1.5);}ctx.stroke();break;
+                case 'star':case 'flower':case 'bubble':
+                    if(Math.random()>0.3)break;
+                    ctx.save();ctx.translate(x,y);ctx.rotate(Math.random()*Math.PI*2);ctx.fillStyle=brushColor;
+                    if(currentDrawTool==='star'){ctx.beginPath();for(let i=0;i<10;i++){const r2=i%2===0?brushSize*1.5:brushSize*0.6,a=(i/10)*Math.PI*2-Math.PI/2;i===0?ctx.moveTo(Math.cos(a)*r2,Math.sin(a)*r2):ctx.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);}ctx.closePath();ctx.fill();}
+                    else if(currentDrawTool==='flower'){for(let p=0;p<6;p++){const a=(p/6)*Math.PI*2;ctx.beginPath();ctx.arc(Math.cos(a)*brushSize,Math.sin(a)*brushSize,brushSize*0.5,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,brushSize*0.4,0,Math.PI*2);ctx.fill();}
+                    else{ctx.globalAlpha=brushOpacity*0.4;ctx.beginPath();ctx.arc(0,0,brushSize*0.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=brushOpacity;ctx.strokeStyle=brushColor;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,brushSize*0.8,0,Math.PI*2);ctx.stroke();}
+                    ctx.restore();break;
             }
+            ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
         }
 
-        function setDrawTool(tool) {
-            currentDrawTool = tool;
-            document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tool' + tool.charAt(0).toUpperCase() + tool.slice(1)).classList.add('active');
+        // ===== SMUDGE =====
+        function initSmudge(x,y){const ctx=getActiveCtx();if(!ctx)return;const r=Math.max(4,Math.ceil(brushSize)),x0=Math.max(0,Math.floor(x-r)),y0=Math.max(0,Math.floor(y-r)),w=Math.min(800-x0,r*2),h=Math.min(560-y0,r*2);if(w>0&&h>0)smudgeBuffer={imageData:ctx.getImageData(x0,y0,w,h),x0,y0,w,h,r};}
+        function doSmudge(x,y){const ctx=getActiveCtx();if(!ctx||!smudgeBuffer)return;const{w,h,r}=smudgeBuffer;smudgeTmp.width=w;smudgeTmp.height=h;smudgeTmp.getContext('2d').putImageData(smudgeBuffer.imageData,0,0);ctx.globalAlpha=0.55;ctx.drawImage(smudgeTmp,x-r,y-r);ctx.globalAlpha=1;const nx0=Math.max(0,Math.floor(x-r)),ny0=Math.max(0,Math.floor(y-r)),nw=Math.min(800-nx0,r*2),nh=Math.min(560-ny0,r*2);if(nw>0&&nh>0)smudgeBuffer={imageData:ctx.getImageData(nx0,ny0,nw,nh),x0:nx0,y0:ny0,w:nw,h:nh,r};}
+
+        // ===== SYMMETRY =====
+        function drawWithSymmetry(x,y,lx,ly){const ctx=getActiveCtx();if(!ctx)return;applyStroke(ctx,x,y,lx,ly);if(symmetryMode==='h'||symmetryMode==='both')applyStroke(ctx,800-x,y,800-lx,ly);if(symmetryMode==='v'||symmetryMode==='both')applyStroke(ctx,x,560-y,lx,560-ly);if(symmetryMode==='both')applyStroke(ctx,800-x,560-y,800-lx,560-ly);}
+
+        // ===== SHAPES =====
+        function previewShape(x,y){if(!shapeStart)return;shapeCtx.clearRect(0,0,800,560);shapeCtx.strokeStyle=brushColor;shapeCtx.fillStyle=brushColor+'40';shapeCtx.lineWidth=brushSize;shapeCtx.lineCap='round';shapeCtx.globalAlpha=brushOpacity;drawShapeOn(shapeCtx,shapeStart.x,shapeStart.y,x,y);shapeCtx.globalAlpha=1;}
+        function commitShape(x,y){if(!shapeStart)return;const ctx=getActiveCtx();if(!ctx)return;ctx.strokeStyle=brushColor;ctx.fillStyle=brushColor+'40';ctx.lineWidth=brushSize;ctx.lineCap='round';ctx.globalAlpha=brushOpacity;drawShapeOn(ctx,shapeStart.x,shapeStart.y,x,y);ctx.globalAlpha=1;shapeCtx.clearRect(0,0,800,560);shapeStart=null;}
+        function drawShapeOn(ctx,x1,y1,x2,y2){
+            const w=x2-x1,h=y2-y1,cx=(x1+x2)/2,cy=(y1+y2)/2,rx=Math.abs(w)/2,ry=Math.abs(h)/2;
+            ctx.beginPath();
+            if(shapeType==='line'){ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+            else if(shapeType==='rect'){ctx.rect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(w),Math.abs(h));ctx.fill();ctx.stroke();}
+            else if(shapeType==='circle'){ctx.ellipse(cx,cy,rx||1,ry||1,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
+            else if(shapeType==='triangle'){ctx.moveTo(cx,y1);ctx.lineTo(x2,y2);ctx.lineTo(x1,y2);ctx.closePath();ctx.fill();ctx.stroke();}
+            else if(shapeType==='star'){const or=Math.max(rx,ry),ir=or*0.4;for(let i=0;i<10;i++){const r=i%2===0?or:ir,a=(i/10)*Math.PI*2-Math.PI/2;i===0?ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r):ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();}
         }
 
-        function getDrawPos(e) {
-            const rect = drawingCanvas.getBoundingClientRect();
-            const scaleX = drawingCanvas.width / rect.width;
-            const scaleY = drawingCanvas.height / rect.height;
-            const src = e.touches ? e.touches[0] : e;
-            return {
-                x: (src.clientX - rect.left) * scaleX,
-                y: (src.clientY - rect.top) * scaleY
-            };
-        }
-
-        function initSmudge(x, y) {
-            const r = Math.max(4, Math.ceil(brushSize));
-            const x0 = Math.max(0, Math.floor(x - r));
-            const y0 = Math.max(0, Math.floor(y - r));
-            const w = Math.min(drawingCanvas.width - x0, r * 2);
-            const h = Math.min(drawingCanvas.height - y0, r * 2);
-            if (w > 0 && h > 0) {
-                smudgeBuffer = { imageData: dctx.getImageData(x0, y0, w, h), x0, y0, w, h, r };
+        // ===== PAINT BUCKET =====
+        function hexToRgb(hex){const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?{r:parseInt(r[1],16),g:parseInt(r[2],16),b:parseInt(r[3],16)}:null;}
+        function paintBucket(x,y){
+            const ctx=getActiveCtx();if(!ctx)return;
+            const idata=ctx.getImageData(0,0,800,560),d=idata.data,px=Math.floor(x),py=Math.floor(y),idx=(py*800+px)*4;
+            const tr=d[idx],tg=d[idx+1],tb=d[idx+2],ta=d[idx+3],rgb=hexToRgb(brushColor);if(!rgb)return;
+            if(rgb.r===tr&&rgb.g===tg&&rgb.b===tb&&255===ta)return;
+            const stack=[px+py*800],vis=new Uint8Array(800*560);vis[px+py*800]=1;
+            while(stack.length){
+                const pos=stack.pop(),cx2=pos%800,cy2=Math.floor(pos/800),i=pos*4;
+                d[i]=rgb.r;d[i+1]=rgb.g;d[i+2]=rgb.b;d[i+3]=Math.round(brushOpacity*255);
+                [[cx2-1,cy2],[cx2+1,cy2],[cx2,cy2-1],[cx2,cy2+1]].forEach(([nx,ny])=>{
+                    if(nx<0||nx>=800||ny<0||ny>=560)return;const np=nx+ny*800;if(vis[np])return;
+                    if(Math.abs(d[np*4]-tr)+Math.abs(d[np*4+1]-tg)+Math.abs(d[np*4+2]-tb)+Math.abs(d[np*4+3]-ta)<=160){vis[np]=1;stack.push(np);}
+                });
             }
+            ctx.putImageData(idata,0,0);saveState();
         }
 
-        function doSmudge(x, y) {
-            if (!smudgeBuffer) return;
-            const { w, h, r } = smudgeBuffer;
-            // Draw the picked-up paint at the new position (drag it forward)
-            smudgeTmp.width = w; smudgeTmp.height = h;
-            smudgeTmp.getContext('2d').putImageData(smudgeBuffer.imageData, 0, 0);
-            dctx.globalAlpha = 0.55;
-            dctx.drawImage(smudgeTmp, x - r, y - r);
-            dctx.globalAlpha = 1.0;
-            // Pick up blended result at new position for next step
-            const nx0 = Math.max(0, Math.floor(x - r));
-            const ny0 = Math.max(0, Math.floor(y - r));
-            const nw = Math.min(drawingCanvas.width - nx0, r * 2);
-            const nh = Math.min(drawingCanvas.height - ny0, r * 2);
-            if (nw > 0 && nh > 0) {
-                smudgeBuffer = { imageData: dctx.getImageData(nx0, ny0, nw, nh), x0: nx0, y0: ny0, w: nw, h: nh, r };
-            }
+        // ===== EYEDROPPER =====
+        function eyedropperPick(x,y){
+            const tmp=document.createElement('canvas');tmp.width=800;tmp.height=560;const tc=tmp.getContext('2d');
+            layers.forEach(l=>{if(l.visible)tc.drawImage(l.canvas,0,0);});
+            const p=tc.getImageData(Math.floor(x),Math.floor(y),1,1).data;
+            if(p[3]>0){const hex='#'+[p[0],p[1],p[2]].map(v=>v.toString(16).padStart(2,'0')).join('');brushColor=hex;const ci=document.getElementById('brushColorInput');if(ci)ci.value=hex;}
+            setDrawTool('brush');
         }
 
-        function doDraw(x, y) {
-            dctx.globalCompositeOperation = 'source-over';
-            if (currentDrawTool === 'brush') {
-                dctx.strokeStyle = brushColor;
-                dctx.lineWidth = brushSize;
-                dctx.lineCap = 'round';
-                dctx.lineJoin = 'round';
-                dctx.globalAlpha = brushOpacity;
-                dctx.beginPath();
-                dctx.moveTo(lastDrawX, lastDrawY);
-                dctx.lineTo(x, y);
-                dctx.stroke();
-            } else if (currentDrawTool === 'pencil') {
-                dctx.strokeStyle = brushColor;
-                dctx.lineWidth = Math.max(1, brushSize * 0.4);
-                dctx.lineCap = 'round';
-                dctx.lineJoin = 'round';
-                dctx.globalAlpha = brushOpacity * 0.7;
-                dctx.beginPath();
-                dctx.moveTo(lastDrawX, lastDrawY);
-                dctx.lineTo(x, y);
-                dctx.stroke();
-            } else if (currentDrawTool === 'marker') {
-                dctx.strokeStyle = brushColor;
-                dctx.lineWidth = brushSize * 1.4;
-                dctx.lineCap = 'square';
-                dctx.lineJoin = 'round';
-                dctx.globalAlpha = Math.min(1, brushOpacity * 0.6);
-                dctx.beginPath();
-                dctx.moveTo(lastDrawX, lastDrawY);
-                dctx.lineTo(x, y);
-                dctx.stroke();
-            } else if (currentDrawTool === 'eraser') {
-                dctx.globalCompositeOperation = 'destination-out';
-                dctx.lineWidth = brushSize * 1.5;
-                dctx.lineCap = 'round';
-                dctx.lineJoin = 'round';
-                dctx.globalAlpha = 1.0;
-                dctx.beginPath();
-                dctx.moveTo(lastDrawX, lastDrawY);
-                dctx.lineTo(x, y);
-                dctx.stroke();
-            } else if (currentDrawTool === 'smudge') {
-                doSmudge(x, y);
-            }
-            dctx.globalAlpha = 1.0;
-            dctx.globalCompositeOperation = 'source-over';
-            lastDrawX = x;
-            lastDrawY = y;
+        // ===== GLITTER / FLIP / FRAME =====
+        function glitterFill(){pushUndo();const ctx=getActiveCtx();if(!ctx)return;const cols=['#ff6b9d','#c44dff','#448aff','#ffd700','#ff6b6b','#69f0ae','#fff'];for(let i=0;i<600;i++){ctx.globalAlpha=Math.random()*0.8+0.2;ctx.fillStyle=cols[Math.floor(Math.random()*cols.length)];ctx.beginPath();ctx.arc(Math.random()*800,Math.random()*560,Math.random()*3+1,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;saveState();}
+        function flipDrawing(dir){pushUndo();const ctx=getActiveCtx();if(!ctx)return;const id=ctx.getImageData(0,0,800,560),tmp=document.createElement('canvas');tmp.width=800;tmp.height=560;tmp.getContext('2d').putImageData(id,0,0);ctx.clearRect(0,0,800,560);ctx.save();if(dir==='h'){ctx.translate(800,0);ctx.scale(-1,1);}else{ctx.translate(0,560);ctx.scale(1,-1);}ctx.drawImage(tmp,0,0);ctx.restore();saveState();}
+        function setPhotoFrame(style){
+            document.querySelectorAll('[id^="frame_"]').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('frame_'+style);if(btn)btn.classList.add('active');
+            const frame=document.getElementById('photoFrame');if(style==='none'){frame.style.display='none';return;}
+            const bgs={gold:'linear-gradient(135deg,#ffd700,#b8860b,#ffd700,#b8860b)',rainbow:'linear-gradient(135deg,#ff6b6b,#ffd700,#69f0ae,#448aff,#c44dff)',hearts:'linear-gradient(135deg,#ff6b9d,#ff9a9e)',stars:'linear-gradient(135deg,#c44dff,#7c4dff)',nature:'linear-gradient(135deg,#69f0ae,#134e5e)'};
+            frame.style.cssText='display:block;position:absolute;inset:0;pointer-events:none;z-index:55;border-radius:12px;border:14px solid transparent;background-image:'+bgs[style]+';background-origin:border-box;background-clip:padding-box,border-box;';
         }
 
-        function clearDrawing() {
-            pushUndo();
-            dctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-            saveState();
+        // ===== CLEAR =====
+        function clearDrawing(){pushUndo();layers.forEach(l=>l.ctx.clearRect(0,0,l.canvas.width,l.canvas.height));saveState();}
+
+        // ===== EVENTS =====
+        function onDrawStart(e){
+            if(!drawMode)return;
+            const pos=getDrawPos(e);
+            if(currentDrawTool==='eyedropper'){eyedropperPick(pos.x,pos.y);e.preventDefault();return;}
+            if(currentDrawTool==='bucket'){pushUndo();paintBucket(pos.x,pos.y);e.preventDefault();return;}
+            if(currentDrawTool==='shape'){pushUndo();shapeStart={x:pos.x,y:pos.y};isDrawing=true;e.preventDefault();return;}
+            pushUndo();isDrawing=true;lastDrawX=pos.x;lastDrawY=pos.y;
+            if(currentDrawTool==='smudge')initSmudge(pos.x,pos.y);else drawWithSymmetry(pos.x,pos.y,pos.x,pos.y);
+            e.preventDefault();
         }
-
-        // Drawing mouse events
-        drawingCanvas.addEventListener('mousedown', (e) => {
-            if (!drawMode) return;
-            pushUndo();
-            isDrawing = true;
-            const pos = getDrawPos(e);
-            lastDrawX = pos.x; lastDrawY = pos.y;
-            if (currentDrawTool === 'smudge') initSmudge(pos.x, pos.y);
-            else doDraw(pos.x, pos.y);
+        function onDrawMove(e){
+            if(!drawMode||!isDrawing)return;
+            const pos=getDrawPos(e);
+            if(currentDrawTool==='shape'){previewShape(pos.x,pos.y);}
+            else if(currentDrawTool==='smudge'){doSmudge(pos.x,pos.y);lastDrawX=pos.x;lastDrawY=pos.y;}
+            else{drawWithSymmetry(pos.x,pos.y,lastDrawX,lastDrawY);lastDrawX=pos.x;lastDrawY=pos.y;}
             e.preventDefault();
-        });
-        drawingCanvas.addEventListener('mousemove', (e) => {
-            if (!drawMode || !isDrawing) return;
-            const pos = getDrawPos(e);
-            doDraw(pos.x, pos.y);
-            e.preventDefault();
-        });
-        drawingCanvas.addEventListener('mouseup', () => { isDrawing = false; smudgeBuffer = null; saveState(); });
-        drawingCanvas.addEventListener('mouseleave', () => { isDrawing = false; smudgeBuffer = null; });
-
-        // Drawing touch events
-        drawingCanvas.addEventListener('touchstart', (e) => {
-            if (!drawMode) return;
-            pushUndo();
-            isDrawing = true;
-            const pos = getDrawPos(e);
-            lastDrawX = pos.x; lastDrawY = pos.y;
-            if (currentDrawTool === 'smudge') initSmudge(pos.x, pos.y);
-            else doDraw(pos.x, pos.y);
-            e.preventDefault();
-        }, { passive: false });
-        drawingCanvas.addEventListener('touchmove', (e) => {
-            if (!drawMode || !isDrawing) return;
-            const pos = getDrawPos(e);
-            doDraw(pos.x, pos.y);
-            e.preventDefault();
-        }, { passive: false });
-        drawingCanvas.addEventListener('touchend', () => { isDrawing = false; smudgeBuffer = null; saveState(); });
+        }
+        function onDrawEnd(e){if(currentDrawTool==='shape'&&shapeStart&&isDrawing){const pos=getDrawPos(e);commitShape(pos.x,pos.y);}isDrawing=false;smudgeBuffer=null;saveState();}
+        eventCanvas.addEventListener('mousedown',onDrawStart);
+        eventCanvas.addEventListener('mousemove',onDrawMove);
+        eventCanvas.addEventListener('mouseup',onDrawEnd);
+        eventCanvas.addEventListener('mouseleave',()=>{isDrawing=false;smudgeBuffer=null;});
+        eventCanvas.addEventListener('touchstart',onDrawStart,{passive:false});
+        eventCanvas.addEventListener('touchmove',onDrawMove,{passive:false});
+        eventCanvas.addEventListener('touchend',onDrawEnd);
 
         // Background colors
         document.querySelectorAll('.color-swatch').forEach(swatch => {
@@ -1302,8 +1453,8 @@
         document.addEventListener('mousemove', (e) => {
             if (isDragging && selectedElement) {
                 const canvasRect = document.getElementById('canvas').getBoundingClientRect();
-                let x = e.clientX - canvasRect.left - dragOffset.x;
-                let y = e.clientY - canvasRect.top - dragOffset.y;
+                let x = snapPos(e.clientX - canvasRect.left - dragOffset.x);
+                let y = snapPos(e.clientY - canvasRect.top - dragOffset.y);
                 selectedElement.style.left = x + 'px';
                 selectedElement.style.top = y + 'px';
             }
@@ -1635,7 +1786,7 @@
             const state = {
                 background: canvas.style.background || '#ffffff',
                 backgroundImage: canvas.style.backgroundImage || 'none',
-                drawingData: drawingCanvas.toDataURL(),
+                drawingLayers: layers.map(l=>({name:l.name,visible:l.visible,data:l.canvas.toDataURL()})),
                 elements: []
             };
             canvas.querySelectorAll('.canvas-element').forEach(el => {
@@ -1706,10 +1857,14 @@
                     if (state.backgroundImage && state.backgroundImage !== 'none') {
                         canvas.style.backgroundImage = state.backgroundImage;
                     }
-                    if (state.drawingData && state.drawingData !== 'data:,') {
-                        const img = new Image();
-                        img.onload = () => dctx.drawImage(img, 0, 0);
-                        img.src = state.drawingData;
+                    initLayers();
+                    if(state.drawingLayers){
+                        layers.forEach(l=>l.canvas.remove()); layers=[];
+                        state.drawingLayers.forEach((ld,i)=>{const layer=addLayer(ld.name||('Layer '+(i+1)));layer.visible=ld.visible!==false;layer.canvas.style.opacity=layer.visible?'1':'0';if(ld.data&&ld.data!=='data:,'){const img=new Image();img.onload=()=>layer.ctx.drawImage(img,0,0);img.src=ld.data;}});
+                        renderLayerPanel();
+                    } else if(state.drawingData&&state.drawingData!=='data:,'){
+                        if(layers.length===0)addLayer('Layer 1');
+                        const img=new Image();img.onload=()=>layers[0].ctx.drawImage(img,0,0);img.src=state.drawingData;
                     }
                     state.elements.forEach(item => {
                         const el = createCanvasElement();
@@ -1758,7 +1913,7 @@
             const canvas = document.getElementById('canvas');
             canvas.querySelectorAll('.canvas-element').forEach(el => el.remove());
             selectedElement = null;
-            dctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            layers.forEach(l=>l.ctx.clearRect(0,0,800,560));
             try {
                 const db = await openAutoSaveDB();
                 const tx = db.transaction('autosave', 'readwrite');
@@ -1777,10 +1932,10 @@
             if (!name) return;
 
             const canvas = document.getElementById('canvas');
-            // Save drawing at half resolution to stay within Firestore limits
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 400; thumbCanvas.height = 280;
-            thumbCanvas.getContext('2d').drawImage(drawingCanvas, 0, 0, 400, 280);
+            const tc = thumbCanvas.getContext('2d');
+            layers.forEach(l=>{if(l.visible)tc.drawImage(l.canvas,0,0,400,280);});
             const state = {
                 background: canvas.style.background || '#ffffff',
                 backgroundImage: canvas.style.backgroundImage || 'none',
@@ -1919,11 +2074,10 @@
                 } else {
                     canvas.style.backgroundImage = 'none';
                 }
-                dctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-                if (state.drawingData && state.drawingData !== 'data:,') {
-                    const dimg = new Image();
-                    dimg.onload = () => dctx.drawImage(dimg, 0, 0, drawingCanvas.width, drawingCanvas.height);
-                    dimg.src = state.drawingData;
+                layers.forEach(l=>l.ctx.clearRect(0,0,800,560));
+                if(state.drawingData&&state.drawingData!=='data:,'){
+                    if(layers.length===0)addLayer('Layer 1');
+                    const dimg=new Image();dimg.onload=()=>layers[0].ctx.drawImage(dimg,0,0,800,560);dimg.src=state.drawingData;
                 }
                 state.elements.forEach(item => {
                     const el = createCanvasElement();
@@ -1975,7 +2129,7 @@
             canvas.style.background = '#ffffff';
             canvas.style.backgroundImage = 'none';
             selectedElement = null;
-            dctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            layers.forEach(l=>l.ctx.clearRect(0,0,800,560));
             try {
                 const db = await openAutoSaveDB();
                 const tx = db.transaction('autosave', 'readwrite');
