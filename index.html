@@ -2003,9 +2003,10 @@
                         canvas.style.backgroundImage = state.backgroundImage;
                     }
                     initLayers();
-                    if(state.drawingLayers){
+                    if(state.drawingLayers && state.drawingLayers.length){
                         layers.forEach(l=>l.canvas.remove()); layers=[];
                         state.drawingLayers.forEach((ld,i)=>{const layer=addLayer(ld.name||('Layer '+(i+1)));layer.visible=ld.visible!==false;layer.canvas.style.opacity=layer.visible?'1':'0';if(ld.data&&ld.data!=='data:,'){const img=new Image();img.onload=()=>layer.ctx.drawImage(img,0,0);img.src=ld.data;}});
+                        if(layers.length===0) addLayer('Layer 1');
                         renderLayerPanel();
                     } else if(state.drawingData&&state.drawingData!=='data:,'){
                         if(layers.length===0)addLayer('Layer 1');
